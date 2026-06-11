@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { LogOut, ShieldCheck, ShoppingBag, Heart } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
+import { MyOrders } from "@/components/order/MyOrders";
 
 export default function AccountPage() {
   const { user, ready, logout, isAdmin } = useAuth();
@@ -20,25 +21,57 @@ export default function AccountPage() {
     <div className="page-enter mx-auto max-w-3xl px-5 py-16 lg:px-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-4xl font-bold tracking-tightest text-ink">Сайн байна уу, {user.name}</h1>
+          <h1 className="font-display text-4xl font-bold tracking-tightest text-ink">
+            Сайн байна уу, {user.name}
+          </h1>
           <p className="mt-1 text-sm text-muted">{user.email}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { logout(); router.push("/"); }}><LogOut size={15} /> Гарах</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            logout();
+            router.push("/");
+          }}
+        >
+          <LogOut size={15} /> Гарах
+        </Button>
       </div>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
-        <Link href="/cart" className="flex items-center gap-4 rounded-xl2 border border-line p-6 hover:border-accent">
-          <ShoppingBag className="text-accent" /><span className="font-display text-lg text-ink">Миний сагс</span>
+        <Link
+          href="/cart"
+          className="flex items-center gap-4 rounded-xl2 border border-line p-6 hover:border-accent"
+        >
+          <ShoppingBag className="text-accent" />
+          <span className="font-display text-lg text-ink">Миний сагс</span>
         </Link>
-        <Link href="/wishlist" className="flex items-center gap-4 rounded-xl2 border border-line p-6 hover:border-accent">
-          <Heart className="text-accent" /><span className="font-display text-lg text-ink">Хадгалсан бараа</span>
+        <Link
+          href="/wishlist"
+          className="flex items-center gap-4 rounded-xl2 border border-line p-6 hover:border-accent"
+        >
+          <Heart className="text-accent" />
+          <span className="font-display text-lg text-ink">Хадгалсан бараа</span>
         </Link>
         {isAdmin && (
-          <Link href="/admin" className="flex items-center gap-4 rounded-xl2 border border-line bg-surface p-6 hover:border-accent sm:col-span-2">
-            <ShieldCheck className="text-accent" /><span className="font-display text-lg text-ink">Админ удирдлага</span>
+          <Link
+            href="/admin"
+            className="flex items-center gap-4 rounded-xl2 border border-line bg-surface p-6 hover:border-accent sm:col-span-2"
+          >
+            <ShieldCheck className="text-accent" />
+            <span className="font-display text-lg text-ink">
+              Админ удирдлага
+            </span>
           </Link>
         )}
       </div>
+
+      <section className="mt-12">
+        <h2 className="mb-5 font-display text-2xl font-semibold text-ink">
+          Миний захиалга
+        </h2>
+        <MyOrders userId={user.id} />
+      </section>
     </div>
   );
 }
