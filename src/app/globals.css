@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 243 238 228; /* зөөлөн дулаан cream */
+  --surface: 234 226 213; /* картууд арай тодрох */
+  --ink: 26 23 20; /* deep espresso */
+  --muted: 120 110 98;
+  --line: 219 210 196;
+  --accent: 166 112 62; /* copper */
+  --accent-soft: 201 162 122;
+}
+
+.dark {
+  --bg: 18 16 13;
+  --surface: 30 27 22;
+  --ink: 237 231 221;
+  --muted: 150 141 128;
+  --line: 48 43 36;
+  --accent: 201 162 122;
+  --accent-soft: 166 112 62;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-feature-settings: "ss01", "cv01";
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgb(var(--accent));
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--bg));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--line));
+  border-radius: 9px;
+}
+
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.fade-in-section > * {
+  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes page {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
