@@ -1,7 +1,9 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Package, ShoppingCart, Star, Store } from "lucide-react";
+import { SITE } from "@/constants/site";
 import { cn } from "@/utils/format";
 
 const LINKS = [
@@ -15,8 +17,25 @@ export function AdminSidebar() {
   const path = usePathname();
   return (
     <aside className="flex gap-1 overflow-x-auto border-b border-line pb-4 lg:flex-col lg:gap-2 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
-      <Link href="/" className="mb-2 hidden items-center gap-2 px-4 font-display text-2xl font-bold text-ink lg:flex">
-        Laptomo<span className="text-accent">.</span>
+      <Link href="/" aria-label={`${SITE.name} нүүр`} className="mb-2 hidden px-4 lg:block">
+        <span className="block">
+          <Image
+            src="/brand/ls-tech-store-logo-v4.png"
+            alt={SITE.name}
+            width={176}
+            height={39}
+            sizes="176px"
+            className="h-12 w-44 object-contain object-left mix-blend-multiply dark:hidden"
+          />
+          <Image
+            src="/brand/ls-tech-store-dark-logo-v4.png"
+            alt=""
+            width={176}
+            height={40}
+            sizes="176px"
+            className="hidden h-12 w-44 object-contain object-left mix-blend-screen dark:block"
+          />
+        </span>
       </Link>
       {LINKS.map((l) => {
         const active = path === l.href;

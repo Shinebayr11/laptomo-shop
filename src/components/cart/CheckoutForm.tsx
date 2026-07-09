@@ -80,7 +80,7 @@ export function CheckoutForm() {
             <span className="font-semibold text-ink">{placed.id}</span>
           </p>
           <p className="max-w-sm text-sm text-muted">
-            Бид тантай удахгүй холбогдоно. Laptomo-г сонгосон танд баярлалаа.
+            Бид тантай удахгүй холбогдоно. LS Tech Store-г сонгосон танд баярлалаа.
           </p>
         </div>
 

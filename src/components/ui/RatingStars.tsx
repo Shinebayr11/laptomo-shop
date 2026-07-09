@@ -12,7 +12,7 @@ export function RatingStars({ rating, size = 14, onSelect }: { rating: number; s
           onClick={() => onSelect?.(i)}
           className={cn(
             onSelect && "cursor-pointer",
-            i <= Math.round(rating) ? "fill-accent text-accent" : "text-line"
+            i <= Math.round(rating) ? "fill-[#f5b301] text-[#f5b301]" : "text-line"
           )}
         />
       ))}

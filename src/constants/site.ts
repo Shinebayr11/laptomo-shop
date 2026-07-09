@@ -1,15 +1,15 @@
 export const SITE = {
-  name: "Laptomo",
-  tagline: "Зөөврийн дэлгэц өргөтгөгч",
+  name: "LS Tech Store",
+  tagline: "Premium laptop & electronics store",
   description:
-    "Laptomo Mongolia — лаптопын зөөврийн дэлгэц өргөтгөгч (гурвалсан, хос, дан монитор) болон дагалдах хэрэгслийн албан ёсны дэлгүүр. Plug & Play, 1080P FHD IPS, нэг кабелиар холбоно.",
-  url: "https://laptomo.mn",
+    "LS Tech Store — premium laptop, electronics, monitor болон дагалдах хэрэгслийн онлайн дэлгүүр. Чанартай бараа, баталгаатай үйлчилгээ, хурдан хүргэлт.",
+  url: "https://lstechstore.mn",
   phone: "+976 7700 7700",
-  email: "tavtai@laptomo.mn",
+  email: "hello@lstechstore.mn",
   address: "Улаанбаатар, Сүхбаатар дүүрэг, Их Тойруу",
   social: {
-    facebook: "https://facebook.com/laptomomongolia",
-    instagram: "https://instagram.com/laptomo",
+    facebook: "https://facebook.com/lstechstore",
+    instagram: "https://instagram.com/lstechstore",
   },
 };
 
@@ -23,7 +23,7 @@ export const NAV_LINKS = [
   { href: "/products?category=phone", label: "Утасны хэрэгсэл" },
 ];
 
-export const BRANDS = ["Laptomo"];
+export const BRANDS = ["Apple", "ASUS", "Dell", "Lenovo", "Samsung", "Logitech", "Baseus", "Anker", "Xiaomi", "HP"];
 
 export const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: "newest", label: "Шинэ нь" },

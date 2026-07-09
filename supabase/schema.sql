@@ -24,6 +24,15 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
+create or replace function public.normalize_profile_name(value text)
+returns text language sql immutable as $$
+  select lower(regexp_replace(btrim(coalesce(value, '')), '\s+', ' ', 'g'));
+$$;
+
+create unique index if not exists profiles_name_unique
+  on public.profiles (public.normalize_profile_name(name))
+  where public.normalize_profile_name(name) <> '';
+
 -- ---------- CATEGORIES ----------
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
@@ -91,6 +100,14 @@ returns boolean language sql security definer stable as $$
   );
 $$;
 
+create or replace function public.profile_name_exists(check_name text)
+returns boolean language sql security definer stable as $$
+  select exists (
+    select 1 from public.profiles
+    where public.normalize_profile_name(name) = public.normalize_profile_name(check_name)
+  );
+$$;
+
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
@@ -130,7 +147,12 @@ create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
   insert into public.profiles (id, name, email, role)
-  values (new.id, coalesce(new.raw_user_meta_data->>'name',''), new.email, 'customer')
+  values (
+    new.id,
+    regexp_replace(btrim(coalesce(new.raw_user_meta_data->>'name','')), '\s+', ' ', 'g'),
+    new.email,
+    'customer'
+  )
   on conflict (id) do nothing;
   return new;
 end; $$;

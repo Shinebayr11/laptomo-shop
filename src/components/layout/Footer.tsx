@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { SITE } from "@/constants/site";
@@ -8,7 +9,26 @@ export function Footer() {
     <footer className="mt-24 border-t border-line bg-surface">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 lg:grid-cols-4 lg:px-8">
         <div className="lg:col-span-1">
-          <h3 className="font-display text-3xl font-bold text-ink">{SITE.name}<span className="text-accent">.</span></h3>
+          <Link href="/" aria-label={`${SITE.name} нүүр`} className="block">
+            <span className="block">
+              <Image
+                src="/brand/ls-tech-store-logo-v4.png"
+                alt={SITE.name}
+                width={256}
+                height={56}
+                sizes="256px"
+                className="h-14 w-64 max-w-full object-contain object-left mix-blend-multiply dark:hidden"
+              />
+              <Image
+                src="/brand/ls-tech-store-dark-logo-v4.png"
+                alt=""
+                width={256}
+                height={58}
+                sizes="256px"
+                className="hidden h-14 w-64 max-w-full object-contain object-left mix-blend-screen dark:block"
+              />
+            </span>
+          </Link>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">{SITE.description}</p>
         </div>
 

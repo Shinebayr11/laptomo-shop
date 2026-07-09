@@ -46,16 +46,40 @@ export function useAuth() {
   };
 
   const register = async (name: string, email: string, password: string) => {
+    const cleanName = name.trim().replace(/\s+/g, " ");
+    if (!cleanName) throw new Error("Нэрээ оруулна уу.");
+
     if (isSupabaseEnabled) {
       const sb = createClient();
-      const { error } = await sb!.auth.signUp({
+      const { data: nameExists, error: nameCheckError } = await sb!.rpc(
+        "profile_name_exists",
+        { check_name: cleanName },
+      );
+
+      if (nameCheckError) throw nameCheckError;
+      if (nameExists) throw new Error("Энэ нэрээр бүртгэл үүссэн байна.");
+
+      const emailRedirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined;
+      const { data, error } = await sb!.auth.signUp({
         email,
         password,
-        options: { data: { name } },
+        options: { data: { name: cleanName }, emailRedirectTo },
       });
       if (error) throw error;
+      if (data.session) {
+        await sb!.auth.signOut();
+        setUser(null);
+        throw new Error(
+          "Supabase дээр email confirmation асаалтгүй байна. Authentication > Providers > Email хэсгээс Confirm email-ийг асаана уу.",
+        );
+      }
+      return { needsEmailConfirmation: true };
     }
-    setUser({ id: "demo", email, name, role: "customer" });
+    setUser({ id: "demo", email, name: cleanName, role: "customer" });
+    return { needsEmailConfirmation: false };
   };
 
   const logout = async () => {

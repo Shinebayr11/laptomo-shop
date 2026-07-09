@@ -1,25 +1,18 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Menu, X, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NAV_LINKS, SITE } from "@/constants/site";
 import { ThemeToggle } from "./ThemeToggle";
 import { CartIndicator } from "./CartIndicator";
-import { cn } from "@/utils/format";
 import { AccountMenu } from "./AccountMenu";
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [q, setQ] = useState("");
   const router = useRouter();
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,37 +21,49 @@ export function Header() {
   };
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 transition-all duration-500",
-        scrolled
-          ? "border-b border-line bg-bg/85 backdrop-blur-md"
-          : "bg-transparent",
-      )}
-    >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-4 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-line bg-bg/95 shadow-sm backdrop-blur-md">
+      <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-3 px-4 py-2.5 sm:px-5 lg:px-8">
         <Link
           href="/"
-          className="font-display text-2xl font-bold tracking-tightest text-ink"
+          aria-label={`${SITE.name} нүүр`}
+          className="shrink-0"
         >
-          {SITE.name}
-          <span className="text-accent">.</span>
+          <span className="block">
+            <Image
+              src="/brand/ls-tech-store-logo-v4.png"
+              alt={SITE.name}
+              width={208}
+              height={46}
+              priority
+              sizes="(max-width: 640px) 160px, (max-width: 1536px) 176px, 208px"
+              className="h-10 w-40 object-contain mix-blend-multiply dark:hidden sm:w-44 2xl:w-52"
+            />
+            <Image
+              src="/brand/ls-tech-store-dark-logo-v4.png"
+              alt=""
+              width={208}
+              height={47}
+              priority
+              sizes="(max-width: 640px) 160px, (max-width: 1536px) 176px, 208px"
+              className="hidden h-10 w-40 object-contain mix-blend-screen dark:block sm:w-44 2xl:w-52"
+            />
+          </span>
         </Link>
 
-        <nav className="hidden items-center gap-8 lg:flex">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-3 xl:flex 2xl:gap-4">
           {NAV_LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className="text-sm text-muted transition-colors hover:text-ink"
+              className="whitespace-nowrap text-[12px] text-muted transition-colors hover:text-ink 2xl:text-[13px]"
             >
               {l.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-1">
-          <form onSubmit={submit} className="hidden items-center md:flex">
+        <div className="flex shrink-0 items-center gap-1">
+          <form onSubmit={submit} className="hidden items-center 2xl:flex">
             <div className="flex items-center gap-2 rounded-full border border-line px-4 py-2">
               <Search size={15} className="text-muted" />
               <input
@@ -73,7 +78,7 @@ export function Header() {
           <CartIndicator />
           <AccountMenu />
           <button
-            className="grid h-9 w-9 place-items-center text-ink lg:hidden"
+            className="grid h-9 w-9 place-items-center text-ink xl:hidden"
             onClick={() => setOpen(!open)}
             aria-label="Цэс"
           >
@@ -83,7 +88,7 @@ export function Header() {
       </div>
 
       {open && (
-        <div className="border-t border-line bg-bg px-5 py-6 lg:hidden">
+        <div className="border-t border-line bg-bg px-5 py-6 xl:hidden">
           <form
             onSubmit={submit}
             className="mb-5 flex items-center gap-2 rounded-full border border-line px-4 py-2.5"

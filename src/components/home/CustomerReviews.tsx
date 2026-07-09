@@ -2,7 +2,7 @@ import { RatingStars } from "@/components/ui/RatingStars";
 import { SectionHeader } from "./SectionHeader";
 
 const TESTIMONIALS = [
-  { name: "Болормаа Б.", role: "Дизайнер", rating: 5, text: "MacBook-оо Laptomo-оос авсан. Хүргэлт хурдан, баглаа боодол маш цэвэрхэн. Дахин авна!" },
+  { name: "Болормаа Б.", role: "Дизайнер", rating: 5, text: "MacBook-оо LS Tech Store-оос авсан. Хүргэлт хурдан, баглаа боодол маш цэвэрхэн. Дахин авна!" },
   { name: "Тэмүүлэн Г.", role: "Хөгжүүлэгч", rating: 5, text: "Үнэ боломжийн, бараа жинхэнэ. Албан ёсны баталгаатай гэдэг нь сэтгэл амар байлгадаг." },
   { name: "Сараа Н.", role: "Оюутан", rating: 4, text: "Чихэвчээ маш хямдхан авлаа. Зөвлөгөө өгсөн ажилтанд баярлалаа." },
 ];

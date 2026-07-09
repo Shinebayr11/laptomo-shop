@@ -3,23 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --bg: 243 238 228; /* зөөлөн дулаан cream */
-  --surface: 234 226 213; /* картууд арай тодрох */
-  --ink: 26 23 20; /* deep espresso */
-  --muted: 120 110 98;
-  --line: 219 210 196;
-  --accent: 166 112 62; /* copper */
-  --accent-soft: 201 162 122;
+  --bg: 247 247 251;
+  --surface: 237 238 246;
+  --ink: 18 18 26;
+  --muted: 99 98 116;
+  --line: 216 216 228;
+  --accent: 126 58 237;
+  --accent-soft: 168 139 250;
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .dark {
-  --bg: 18 16 13;
-  --surface: 30 27 22;
-  --ink: 237 231 221;
-  --muted: 150 141 128;
-  --line: 48 43 36;
-  --accent: 201 162 122;
-  --accent-soft: 166 112 62;
+  --bg: 8 8 13;
+  --surface: 18 18 27;
+  --ink: 241 241 246;
+  --muted: 160 156 178;
+  --line: 48 44 64;
+  --accent: 168 85 247;
+  --accent-soft: 126 58 237;
 }
 
 * {
@@ -76,6 +78,7 @@ body {
 .page-enter {
   animation: page 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
 @keyframes page {
   from {
     opacity: 0;
