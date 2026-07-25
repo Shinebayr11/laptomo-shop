@@ -2,21 +2,59 @@ import { Product, Review, Order } from "@/types";
 import { SEED_PRODUCTS } from "@/data/products";
 import { SEED_REVIEWS } from "@/data/reviews";
 import { SEED_ORDERS } from "@/data/orders";
+import {
+  applyArchiveOverrides,
+  visibleProducts,
+} from "./archive-overrides";
+import { getArchiveOverridesFromCookie } from "./archive-overrides-server";
 import { createServerSupabase, isSupabaseEnabled } from "./supabase/server";
+
+type GetProductsOptions = {
+  respectArchiveCookie?: boolean;
+};
 
 /**
  * Бүх өгөгдлийн уншилт энэ давхаргаар дамжина.
  * Supabase тохируулсан бол DB-ээс, үгүй бол seed дата буцаана.
  */
-export async function getProducts(): Promise<Product[]> {
-  if (!isSupabaseEnabled) return SEED_PRODUCTS;
+function mergeWithSeedProducts(products: Product[]): Product[] {
+  const seen = new Set(products.flatMap((p) => [p.id, p.slug]));
+  const missingSeeds = SEED_PRODUCTS.filter(
+    (p) => !seen.has(p.id) && !seen.has(p.slug),
+  );
+
+  return [...products, ...missingSeeds].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+}
+
+function publicVisibleProducts(
+  products: Product[],
+  options: GetProductsOptions,
+): Product[] {
+  const respectArchiveCookie = options.respectArchiveCookie ?? true;
+
+  if (!respectArchiveCookie) return visibleProducts(products);
+
+  return visibleProducts(
+    applyArchiveOverrides(products, getArchiveOverridesFromCookie()),
+  );
+}
+
+export async function getProducts(
+  options: GetProductsOptions = {},
+): Promise<Product[]> {
+  if (!isSupabaseEnabled) return publicVisibleProducts(SEED_PRODUCTS, options);
   try {
     const sb = createServerSupabase();
     const { data, error } = await sb!.from("products").select("*").order("created_at", { ascending: false });
-    if (error || !data?.length) return SEED_PRODUCTS;
-    return data as Product[];
+    if (error || !data?.length) {
+      return publicVisibleProducts(SEED_PRODUCTS, options);
+    }
+    return publicVisibleProducts(mergeWithSeedProducts(data as Product[]), options);
   } catch {
-    return SEED_PRODUCTS;
+    return publicVisibleProducts(SEED_PRODUCTS, options);
   }
 }
 

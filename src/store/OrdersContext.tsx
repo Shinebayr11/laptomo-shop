@@ -1,6 +1,7 @@
 "use client";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -9,7 +10,7 @@ import {
 import { Order, OrderItem, OrderStatus } from "@/types";
 import { SEED_ORDERS } from "@/data/orders";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { isSupabaseEnabled } from "@/lib/supabase/client";
+import { createClient, isSupabaseEnabled } from "@/lib/supabase/client";
 import {
   fetchOrders,
   insertOrder,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/admin-data";
 
 export interface PlaceOrderInput {
+  order_id?: string;
   user_id: string;
   customer_name: string;
   customer_phone: string;
@@ -28,9 +30,11 @@ export interface PlaceOrderInput {
 interface OrdersCtx {
   orders: Order[];
   ready: boolean;
+  error: string | null;
   placeOrder: (input: PlaceOrderInput) => Promise<Order>;
   setOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
   ordersForUser: (userId: string) => Order[];
+  refreshOrders: () => Promise<void>;
 }
 
 const Ctx = createContext<OrdersCtx | null>(null);
@@ -43,45 +47,109 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   );
   const [dbOrders, setDbOrders] = useState<Order[] | null>(null);
   const [dbReady, setDbReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refreshOrders = useCallback(async () => {
+    if (!supa) return;
+    try {
+      const next = await fetchOrders();
+      setDbOrders(next ?? []);
+      setError(null);
+    } catch (loadError) {
+      setDbOrders(null);
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Захиалгын мэдээлэл татаж чадсангүй.",
+      );
+    } finally {
+      setDbReady(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!supa) return;
-    fetchOrders()
-      .then((o) => setDbOrders(o ?? []))
-      .catch(() => setDbOrders([]))
-      .finally(() => setDbReady(true));
-  }, []);
+    const sb = createClient();
+    let active = true;
+
+    const load = async () => {
+      if (!active) return;
+      await refreshOrders();
+    };
+
+    void load();
+    const {
+      data: { subscription },
+    } = sb!.auth.onAuthStateChange(() => {
+      window.setTimeout(() => {
+        void load();
+      }, 0);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [refreshOrders]);
 
   const orders = supa ? (dbOrders ?? []) : lsOrders;
   const ready = supa ? dbReady : lsReady;
 
   const placeOrder = async (input: PlaceOrderInput) => {
+    const { order_id, ...orderInput } = input;
+    if (order_id) {
+      const existing = orders.find((order) => order.id === order_id);
+      if (existing) return existing;
+    }
+
     const order: Order = {
-      ...input,
-      id: "ORD-" + Math.floor(1000 + Math.random() * 9000),
+      ...orderInput,
+      id: order_id ?? "ORD-" + Math.floor(1000 + Math.random() * 9000),
       status: "pending",
       created_at: new Date().toISOString(),
     };
     if (supa) {
-      await insertOrder(order);
-      setDbOrders((prev) => [order, ...(prev ?? [])]);
-    } else {
-      setLsOrders((prev) => [order, ...prev]);
+      try {
+        await insertOrder(order);
+        setDbOrders((prev) => [order, ...(prev ?? [])]);
+        setError(null);
+        return order;
+      } catch (saveError) {
+        const message =
+          saveError instanceof Error
+            ? saveError.message
+            : "Захиалгыг хадгалж чадсангүй.";
+        setError(message);
+        throw new Error(message);
+      }
     }
+
+    setLsOrders((prev) => [order, ...prev]);
     return order;
   };
 
   const setOrderStatus = async (id: string, status: OrderStatus) => {
     if (supa) {
-      await updateOrderStatusDb(id, status);
-      setDbOrders((prev) =>
-        (prev ?? []).map((o) => (o.id === id ? { ...o, status } : o)),
-      );
-    } else {
-      setLsOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status } : o)),
-      );
+      try {
+        await updateOrderStatusDb(id, status);
+        setDbOrders((prev) =>
+          (prev ?? []).map((o) => (o.id === id ? { ...o, status } : o)),
+        );
+        setError(null);
+        return;
+      } catch (updateError) {
+        const message =
+          updateError instanceof Error
+            ? updateError.message
+            : "Захиалгын төлөв шинэчилж чадсангүй.";
+        setError(message);
+        throw new Error(message);
+      }
     }
+
+    setLsOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, status } : o)),
+    );
   };
 
   const ordersForUser = (userId: string) =>
@@ -91,7 +159,15 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ orders, ready, placeOrder, setOrderStatus, ordersForUser }}
+      value={{
+        orders,
+        ready,
+        error,
+        placeOrder,
+        setOrderStatus,
+        ordersForUser,
+        refreshOrders,
+      }}
     >
       {children}
     </Ctx.Provider>

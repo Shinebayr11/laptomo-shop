@@ -12,7 +12,7 @@ const FEATURES = [
   { title: "Захиалгаар ирнэ", description: "7-14 хоногт" },
   { title: "12 сар баталгаа", description: "Албан ёсны" },
   { title: "14 хоног буцаалт", description: "Асуудалгүй" },
-  { title: "Найдвартай төлбөр", description: "QPay · SocialPay" },
+  { title: "Найдвартай төлбөр", description: "Wire · QPay · Банкны апп" },
 ];
 
 const STEPS = [
@@ -24,7 +24,7 @@ const STEPS = [
   {
     number: "02",
     title: "Захиалах",
-    description: "Сагсандаа нэмээд QPay, SocialPay эсвэл бэлэн төлбөрөөр баталгаажуулна.",
+    description: "Сагсандаа нэмээд Wire, QPay эсвэл бэлэн төлбөрөөр баталгаажуулна.",
   },
   {
     number: "03",

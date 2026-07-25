@@ -22,6 +22,12 @@ const nextConfig = {
       { protocol: "https", hostname: "istyle.hr" },
       { protocol: "https", hostname: "cdn.shopify.com" },
       { protocol: "https", hostname: "ssl-product-images.www8-hp.com" },
+      { protocol: "https", hostname: "www.blueboltchargers.com" },
+      { protocol: "https", hostname: "baseus.com.au" },
+      { protocol: "https", hostname: "tector.fi" },
+      { protocol: "https", hostname: "cdn.cs.1worldsync.com" },
+      { protocol: "https", hostname: "cdn.mos.cms.futurecdn.net" },
+      { protocol: "https", hostname: "cdn11.bigcommerce.com" },
     ],
   },
 };

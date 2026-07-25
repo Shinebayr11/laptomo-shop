@@ -17,13 +17,14 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <div className="group relative flex flex-col">
-      <Link href={`/products/${product.slug}`} className="relative block aspect-[4/5] overflow-hidden rounded-xl2 bg-surface">
+      <Link href={`/products/${product.slug}`} className="relative block aspect-[384/341] overflow-hidden rounded-xl2 bg-white shadow-sm">
         <Image
           src={product.images[0]}
           alt={product.title}
           fill
+          unoptimized
           sizes="(max-width:768px) 50vw, 25vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          className="object-contain p-2 transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute left-3 top-3 flex flex-col gap-2">
           {off > 0 && <Badge tone="sale">-{off}%</Badge>}

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { OrderStatus } from "@/types";
 import { useAdmin } from "@/store/AdminContext";
 import { OrderTable } from "@/components/admin/OrderTable";
@@ -10,8 +11,9 @@ import { cn } from "@/utils/format";
 const FILTERS: (OrderStatus | "all")[] = ["all", "pending", "processing", "shipped", "delivered", "cancelled"];
 
 export default function AdminOrdersPage() {
-  const { orders, ready, setOrderStatus } = useAdmin();
+  const { orders, ordersError, ready, setOrderStatus, refreshOrders } = useAdmin();
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
+  const [refreshing, setRefreshing] = useState(false);
 
   if (!ready) return <p className="text-sm text-muted">Ачааллаж байна...</p>;
 
@@ -31,6 +33,28 @@ export default function AdminOrdersPage() {
           </button>
         ))}
       </div>
+
+      {ordersError && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3">
+          <p className="text-sm text-red-500">{ordersError}</p>
+          <button
+            type="button"
+            disabled={refreshing}
+            onClick={async () => {
+              setRefreshing(true);
+              try {
+                await refreshOrders();
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-line px-4 text-xs font-medium uppercase tracking-wide2 text-ink disabled:opacity-40"
+          >
+            <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
+            Дахин татах
+          </button>
+        </div>
+      )}
 
       {shown.length ? (
         <OrderTable orders={shown} onStatus={setOrderStatus} />

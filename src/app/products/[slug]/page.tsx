@@ -10,7 +10,7 @@ import { ProductReviews } from "@/components/product/ProductReviews";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 
 export async function generateStaticParams() {
-  const products = await getProducts();
+  const products = await getProducts({ respectArchiveCookie: false });
   return products.map((p) => ({ slug: p.slug }));
 }
 
@@ -30,14 +30,14 @@ export default async function ProductPage({ params }: { params: { slug: string }
   ]);
 
   return (
-    <div className="page-enter mx-auto max-w-7xl px-5 py-10 lg:px-8">
+    <div className="page-enter mx-auto max-w-screen-2xl px-5 py-10 lg:px-8">
       <nav className="mb-8 flex items-center gap-1.5 text-xs text-muted">
         <Link href="/" className="hover:text-accent">Нүүр</Link><ChevronRight size={13} />
         <Link href="/products" className="hover:text-accent">Бүтээгдэхүүн</Link><ChevronRight size={13} />
         <span className="text-ink">{product.title}</span>
       </nav>
 
-      <div className="grid gap-12 lg:grid-cols-2">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]">
         <ProductGallery images={product.images} title={product.title} />
         <div>
           <ProductInfo product={product} />

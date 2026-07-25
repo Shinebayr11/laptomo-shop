@@ -61,6 +61,7 @@ create table if not exists public.products (
   is_featured boolean not null default false,
   is_new boolean not null default false,
   is_bestseller boolean not null default false,
+  is_archived boolean not null default false,
   created_at timestamptz not null default now()
 );
 

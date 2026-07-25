@@ -66,12 +66,14 @@ export default function AccountPage() {
         )}
       </div>
 
-      <section className="mt-12">
-        <h2 className="mb-5 font-display text-2xl font-semibold text-ink">
-          Миний захиалга
-        </h2>
-        <MyOrders userId={user.id} />
-      </section>
+      {!isAdmin && (
+        <section className="mt-12">
+          <h2 className="mb-5 font-display text-2xl font-semibold text-ink">
+            Миний захиалга
+          </h2>
+          <MyOrders userId={user.id} />
+        </section>
+      )}
     </div>
   );
 }

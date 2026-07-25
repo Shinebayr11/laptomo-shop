@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, RefreshCw, ShieldCheck } from "lucide-react";
 import { Order } from "@/types";
+import { WireCheckoutResponse } from "@/lib/wire/types";
 import { useCart } from "@/store/CartContext";
 import { useOrders } from "@/store/OrdersContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,12 +12,52 @@ import { OrderTracker } from "@/components/order/OrderTracker";
 import { cn, effectivePrice, deliveryFee, formatMNT } from "@/utils/format";
 
 const PAYMENTS = [
-  { id: "qpay", label: "QPay" },
-  { id: "socialpay", label: "SocialPay" },
+  { id: "wire", label: "Wire (QPay / банкны апп)" },
   { id: "cash", label: "Бэлэн (хүргэлтээр)" },
 ];
 
-export function CheckoutForm() {
+type CheckoutValues = {
+  name: string;
+  phone: string;
+  address: string;
+};
+
+type PendingWireCheckout = {
+  intent_id: string;
+  order_id: string;
+  idempotency_key: string;
+  customer: CheckoutValues;
+};
+
+type WirePendingState = {
+  intentId: string;
+  status: string;
+  actionUrl: string | null;
+};
+
+const PENDING_WIRE_KEY = "laptomo_pending_wire_checkout";
+
+function savePendingWireCheckout(pending: PendingWireCheckout) {
+  sessionStorage.setItem(PENDING_WIRE_KEY, JSON.stringify(pending));
+}
+
+function readPendingWireCheckout(): PendingWireCheckout | null {
+  try {
+    const value = sessionStorage.getItem(PENDING_WIRE_KEY);
+    return value ? (JSON.parse(value) as PendingWireCheckout) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readApiError(response: Response): Promise<string> {
+  const payload = (await response.json().catch(() => null)) as {
+    error?: string;
+  } | null;
+  return payload?.error || "Төлбөрийн хүсэлт амжилтгүй боллоо.";
+}
+
+export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
   const { lines, subtotal, clear } = useCart();
   const { placeOrder } = useOrders();
   const { user } = useAuth();
@@ -25,38 +66,183 @@ export function CheckoutForm() {
     phone: "",
     address: "",
   });
-  const [pay, setPay] = useState("qpay");
+  const [pay, setPay] = useState("wire");
   const [placed, setPlaced] = useState<Order | null>(null);
+  const [wirePending, setWirePending] = useState<WirePendingState | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const checkedReturn = useRef(false);
 
   const valid = form.name && form.phone.length >= 8 && form.address;
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  const completeOrder = useCallback(
+    async (
+      customer: CheckoutValues,
+      orderId: string | undefined,
+      totalPrice: number,
+    ) => {
+      const order = await placeOrder({
+        order_id: orderId,
+        user_id: user?.id ?? "guest",
+        customer_name: customer.name,
+        customer_phone: customer.phone,
+        address: customer.address,
+        total_price: totalPrice,
+        items: lines.map((line) => ({
+          product_id: line.product.id,
+          title: line.product.title,
+          price: effectivePrice(
+            line.product.price,
+            line.product.discount_price,
+          ),
+          quantity: line.quantity,
+          image: line.product.images[0] ?? "",
+        })),
+      });
+
+      sessionStorage.removeItem(PENDING_WIRE_KEY);
+      window.history.replaceState(null, "", "/checkout");
+      setPlaced(order);
+      setWirePending(null);
+      onComplete?.();
+      clear();
+    },
+    [clear, lines, onComplete, placeOrder, user?.id],
+  );
+
+  const verifyWirePayment = useCallback(
+    async (intentId: string, pending: PendingWireCheckout) => {
+      const response = await fetch(
+        `/api/wire/payment-intents/${encodeURIComponent(intentId)}`,
+        { cache: "no-store" },
+      );
+      if (!response.ok) throw new Error(await readApiError(response));
+
+      const result = (await response.json()) as Omit<
+        WireCheckoutResponse,
+        "order_id"
+      >;
+
+      if (result.complete) {
+        await completeOrder(
+          pending.customer,
+          pending.order_id,
+          result.payment_intent.amount,
+        );
+        return;
+      }
+
+      setWirePending({
+        intentId,
+        status: result.payment_intent.status,
+        actionUrl: result.action_url,
+      });
+    },
+    [completeOrder],
+  );
+
+  useEffect(() => {
+    if (checkedReturn.current) return;
+
+    const intentId = new URLSearchParams(window.location.search).get(
+      "wire_payment_intent",
+    );
+    if (!intentId) return;
+
+    checkedReturn.current = true;
+    const pending = readPendingWireCheckout();
+    if (!pending || pending.intent_id !== intentId) {
+      setErr(
+        "Төлбөрийн түр мэдээлэл олдсонгүй. Захиалгаа дахин эхлүүлнэ үү.",
+      );
+      return;
+    }
+
+    setBusy(true);
+    setErr(null);
+    verifyWirePayment(intentId, pending)
+      .catch((error: unknown) =>
+        setErr(
+          error instanceof Error
+            ? error.message
+            : "Төлбөрийн төлөв шалгахад алдаа гарлаа.",
+        ),
+      )
+      .finally(() => setBusy(false));
+  }, [verifyWirePayment]);
+
   const submit = async () => {
     if (!valid || busy) return;
+    if (!user) {
+      setErr("Захиалга өгөхийн тулд эхлээд бүртгэлдээ нэвтэрнэ үү.");
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
-      const order = await placeOrder({
-        user_id: user?.id ?? "guest",
-        customer_name: form.name,
-        customer_phone: form.phone,
-        address: form.address,
-        total_price: subtotal + deliveryFee(subtotal),
-        items: lines.map((l) => ({
-          product_id: l.product.id,
-          title: l.product.title,
-          price: effectivePrice(l.product.price, l.product.discount_price),
-          quantity: l.quantity,
-          image: l.product.images[0] ?? "",
-        })),
+      if (pay === "cash") {
+        await completeOrder(
+          form,
+          undefined,
+          subtotal + deliveryFee(subtotal),
+        );
+        return;
+      }
+
+      const orderId = `ORD-${Date.now().toString(36).toUpperCase()}-${crypto
+        .randomUUID()
+        .slice(0, 4)
+        .toUpperCase()}`;
+      const idempotencyKey = crypto.randomUUID();
+      const response = await fetch("/api/wire/payment-intents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_id: orderId,
+          idempotency_key: idempotencyKey,
+          customer: { name: form.name, phone: form.phone },
+          items: lines.map((line) => ({
+            product_id: line.product.id,
+            quantity: line.quantity,
+          })),
+        }),
       });
-      setPlaced(order);
-      clear();
-    } catch {
+
+      if (!response.ok) throw new Error(await readApiError(response));
+
+      const result = (await response.json()) as WireCheckoutResponse;
+      const pending: PendingWireCheckout = {
+        intent_id: result.payment_intent.id,
+        order_id: result.order_id,
+        idempotency_key: idempotencyKey,
+        customer: form,
+      };
+      savePendingWireCheckout(pending);
+
+      if (result.complete) {
+        await completeOrder(
+          form,
+          result.order_id,
+          result.payment_intent.amount,
+        );
+        return;
+      }
+
+      setWirePending({
+        intentId: result.payment_intent.id,
+        status: result.payment_intent.status,
+        actionUrl: result.action_url,
+      });
+
+      if (result.action_url) {
+        window.location.assign(result.action_url);
+      }
+    } catch (error) {
       setErr(
-        "Захиалга илгээхэд алдаа гарлаа. Нэвтэрсэн эсэхээ шалгаад дахин оролдоно уу.",
+        error instanceof Error
+          ? error.message
+          : "Захиалга илгээхэд алдаа гарлаа. Дахин оролдоно уу.",
       );
     } finally {
       setBusy(false);
@@ -97,12 +283,12 @@ export function CheckoutForm() {
             {placed.items.map((it) => (
               <div
                 key={it.product_id}
-                className="flex items-center justify-between text-sm"
+                className="flex items-start justify-between gap-4 text-sm"
               >
-                <span className="text-ink">
+                <span className="min-w-0 text-ink">
                   {it.title} <span className="text-muted">× {it.quantity}</span>
                 </span>
-                <span className="text-ink">
+                <span className="shrink-0 text-right text-ink">
                   {formatMNT(it.price * it.quantity)}
                 </span>
               </div>
@@ -152,7 +338,7 @@ export function CheckoutForm() {
         <label className="mb-2 block text-xs font-semibold uppercase tracking-wide2 text-ink">
           Төлбөрийн хэлбэр
         </label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {PAYMENTS.map((p) => (
             <button
               key={p.id}
@@ -171,24 +357,81 @@ export function CheckoutForm() {
       </div>
 
       {!user && (
-        <p className="text-xs text-muted">
-          Зөвлөмж:{" "}
+        <p className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-muted">
+          Захиалга хадгалахын тулд{" "}
           <Link href="/login" className="text-accent hover:underline">
-            нэвтэрснээр
+            бүртгэлдээ нэвтэрнэ үү
           </Link>{" "}
-          захиалгаа дараа нь хянах боломжтой.
+          .
         </p>
       )}
 
       {err && <p className="text-sm text-red-600">{err}</p>}
 
+      {wirePending && (
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-4">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 shrink-0 text-accent" size={20} />
+            <div className="min-w-0">
+              <p className="font-medium text-ink">Wire төлбөр хүлээгдэж байна</p>
+              <p className="mt-1 text-xs text-muted">
+                Төлөв: {wirePending.status} · {wirePending.intentId}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {wirePending.actionUrl && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => window.location.assign(wirePending.actionUrl!)}
+              >
+                <ExternalLink size={15} /> Төлбөр үргэлжлүүлэх
+              </Button>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={async () => {
+                const pending = readPendingWireCheckout();
+                if (!pending) {
+                  setErr("Төлбөрийн түр мэдээлэл олдсонгүй.");
+                  return;
+                }
+                setBusy(true);
+                setErr(null);
+                try {
+                  await verifyWirePayment(wirePending.intentId, pending);
+                } catch (error) {
+                  setErr(
+                    error instanceof Error
+                      ? error.message
+                      : "Төлбөрийн төлөв шалгахад алдаа гарлаа.",
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <RefreshCw size={15} /> Төлөв шалгах
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Button
         onClick={submit}
-        disabled={!valid || busy}
+        disabled={!valid || busy || !user}
         size="lg"
         className="w-full"
       >
-        {busy ? "Илгээж байна..." : "Захиалга баталгаажуулах"}
+        {busy
+          ? "Шалгаж байна..."
+          : pay === "wire"
+            ? "Wire-ээр төлөх"
+            : "Захиалга баталгаажуулах"}
       </Button>
     </div>
   );

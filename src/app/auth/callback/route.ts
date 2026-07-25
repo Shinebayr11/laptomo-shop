@@ -11,7 +11,13 @@ export async function GET(request: Request) {
   }
 
   const supabase = createServerSupabase();
-  const { error } = await supabase!.auth.exchangeCodeForSession(code);
+  let error: unknown = null;
+  try {
+    const result = await supabase!.auth.exchangeCodeForSession(code);
+    error = result.error;
+  } catch (caught) {
+    error = caught;
+  }
 
   if (error) {
     return NextResponse.redirect(`${origin}/login?confirmed=0`);

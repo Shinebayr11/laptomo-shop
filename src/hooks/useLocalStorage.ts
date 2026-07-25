@@ -1,28 +1,73 @@
 "use client";
-import { useEffect, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 export function useLocalStorage<T>(key: string, initial: T) {
-  const [value, setValue] = useState<T>(initial);
+  const initialRef = useRef(initial);
+  const [value, setStoredValue] = useState<T>(initial);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
+  const readValue = useCallback(() => {
     try {
       const raw = localStorage.getItem(key);
-      if (raw) setValue(JSON.parse(raw));
+      return raw ? (JSON.parse(raw) as T) : initialRef.current;
     } catch {
-      /* алгасна */
+      return initialRef.current;
     }
-    setReady(true);
   }, [key]);
 
   useEffect(() => {
-    if (!ready) return;
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      /* алгасна */
-    }
-  }, [key, value, ready]);
+    setStoredValue(readValue());
+    setReady(true);
+  }, [readValue]);
+
+  const setValue: Dispatch<SetStateAction<T>> = useCallback(
+    (next) => {
+      setStoredValue((prev) => {
+        const resolved =
+          typeof next === "function"
+            ? (next as (value: T) => T)(prev)
+            : next;
+
+        try {
+          localStorage.setItem(key, JSON.stringify(resolved));
+          window.dispatchEvent(
+            new CustomEvent("laptomo-local-storage", { detail: { key } }),
+          );
+        } catch {
+          /* алгасна */
+        }
+
+        return resolved;
+      });
+    },
+    [key],
+  );
+
+  useEffect(() => {
+    const sync = (event: Event) => {
+      if (event instanceof StorageEvent && event.key && event.key !== key) {
+        return;
+      }
+      if (event instanceof CustomEvent && event.detail?.key !== key) {
+        return;
+      }
+      setStoredValue(readValue());
+    };
+
+    window.addEventListener("storage", sync);
+    window.addEventListener("laptomo-local-storage", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("laptomo-local-storage", sync);
+    };
+  }, [key, readValue]);
 
   return [value, setValue, ready] as const;
 }

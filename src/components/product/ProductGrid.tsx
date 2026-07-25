@@ -5,7 +5,7 @@ import { ProductCard } from "./ProductCard";
 
 export function ProductGrid({ products }: { products: Product[] }) {
   return (
-    <div className="grid grid-cols-2 gap-x-5 gap-y-10 lg:grid-cols-4 lg:gap-x-8">
+    <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-x-8">
       {products.map((p, i) => (
         <motion.div
           key={p.id}

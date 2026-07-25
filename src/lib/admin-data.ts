@@ -19,9 +19,36 @@ export async function upsertProduct(p: Product): Promise<void> {
   if (error) throw error;
 }
 
-export async function deleteProductDb(id: string): Promise<void> {
+export async function archiveProductDb(id: string): Promise<void> {
   const sb = createClient();
-  const { error } = await sb!.from("products").delete().eq("id", id);
+  const { error } = await sb!
+    .from("products")
+    .update({ is_archived: true })
+    .eq("id", id)
+    .select("id")
+    .single();
+  if (error) throw error;
+}
+
+export async function archiveProductsDb(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const sb = createClient();
+  const { error } = await sb!
+    .from("products")
+    .update({ is_archived: true })
+    .in("id", ids)
+    .select("id");
+  if (error) throw error;
+}
+
+export async function restoreProductDb(id: string): Promise<void> {
+  const sb = createClient();
+  const { error } = await sb!
+    .from("products")
+    .update({ is_archived: false })
+    .eq("id", id)
+    .select("id")
+    .single();
   if (error) throw error;
 }
 

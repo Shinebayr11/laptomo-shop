@@ -1,16 +1,41 @@
 "use client";
 import Image from "next/image";
-import { Pencil, Trash2 } from "lucide-react";
+import { Archive, Pencil } from "lucide-react";
 import { Product } from "@/types";
 import { findCategory } from "@/constants/categories";
 import { formatMNT, effectivePrice } from "@/utils/format";
 
-export function ProductTable({ products, onEdit, onDelete }: { products: Product[]; onEdit: (p: Product) => void; onDelete: (p: Product) => void }) {
+export function ProductTable({
+  products,
+  selectedIds,
+  allSelected,
+  onToggleSelect,
+  onToggleSelectAll,
+  onEdit,
+  onArchive,
+}: {
+  products: Product[];
+  selectedIds: string[];
+  allSelected: boolean;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
+  onEdit: (p: Product) => void;
+  onArchive: (p: Product) => void;
+}) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-line">
-      <table className="w-full min-w-[640px] text-sm">
+      <table className="w-full min-w-[720px] text-sm">
         <thead className="border-b border-line bg-surface/40 text-left text-xs uppercase tracking-wide2 text-muted">
           <tr>
+            <th className="w-12 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={onToggleSelectAll}
+                aria-label="Бүгдийг сонгох"
+                className="h-4 w-4 rounded border-line accent-accent"
+              />
+            </th>
             <th className="px-4 py-3 font-medium">Бүтээгдэхүүн</th>
             <th className="px-4 py-3 font-medium">Ангилал</th>
             <th className="px-4 py-3 font-medium">Үнэ</th>
@@ -21,6 +46,15 @@ export function ProductTable({ products, onEdit, onDelete }: { products: Product
         <tbody className="divide-y divide-line">
           {products.map((p) => (
             <tr key={p.id} className="hover:bg-surface/30">
+              <td className="px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(p.id)}
+                  onChange={() => onToggleSelect(p.id)}
+                  aria-label={`${p.title} сонгох`}
+                  className="h-4 w-4 rounded border-line accent-accent"
+                />
+              </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-surface">
@@ -37,7 +71,7 @@ export function ProductTable({ products, onEdit, onDelete }: { products: Product
               <td className="px-4 py-3">
                 <div className="flex justify-end gap-2">
                   <button onClick={() => onEdit(p)} className="rounded-lg border border-line p-2 text-muted hover:text-accent" aria-label="Засах"><Pencil size={15} /></button>
-                  <button onClick={() => onDelete(p)} className="rounded-lg border border-line p-2 text-muted hover:text-red-600" aria-label="Устгах"><Trash2 size={15} /></button>
+                  <button onClick={() => onArchive(p)} className="rounded-lg border border-line p-2 text-muted hover:text-amber-600" aria-label="Архивлах"><Archive size={15} /></button>
                 </div>
               </td>
             </tr>

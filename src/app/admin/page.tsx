@@ -1,5 +1,5 @@
 "use client";
-import { Package, ShoppingCart, Users, Wallet } from "lucide-react";
+import { Archive, Package, ShoppingCart, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useAdmin } from "@/store/AdminContext";
 import { StatCard } from "@/components/admin/StatCard";
@@ -7,7 +7,7 @@ import { OrderStatusBadge } from "@/components/admin/OrderStatusBadge";
 import { formatMNT, formatDate } from "@/utils/format";
 
 export default function AdminDashboardPage() {
-  const { products, orders, reviews, ready } = useAdmin();
+  const { products, archivedProducts, orders, reviews, ready } = useAdmin();
   if (!ready) return <p className="text-sm text-muted">Ачааллаж байна...</p>;
 
   const totalSales = orders
@@ -23,8 +23,11 @@ export default function AdminDashboardPage() {
         <p className="mt-1 text-sm text-muted">Дэлгүүрийн ерөнхий үзүүлэлт</p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Бүтээгдэхүүн" value={String(products.length)} icon={Package} hint="Нийт нэр төрөл" />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
+        <StatCard label="Бүтээгдэхүүн" value={String(products.length)} icon={Package} hint="Идэвхтэй нэр төрөл" />
+        <Link href="/admin/archive" className="block h-full">
+          <StatCard label="Архив" value={String(archivedProducts.length)} icon={Archive} hint="Нуусан бараа" />
+        </Link>
         <StatCard label="Захиалга" value={String(orders.length)} icon={ShoppingCart} hint="Нийт захиалга" />
         <StatCard label="Хэрэглэгч" value={String(customers)} icon={Users} hint="Худалдан авсан" />
         <StatCard label="Орлого" value={formatMNT(totalSales)} icon={Wallet} hint="Цуцлагдсанаас бусад" />

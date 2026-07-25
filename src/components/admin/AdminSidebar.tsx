@@ -2,13 +2,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingCart, Star, Store } from "lucide-react";
+import { Archive, LayoutDashboard, Package, ShoppingCart, Star, Store } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { cn } from "@/utils/format";
 
 const LINKS = [
   { href: "/admin", label: "Хяналтын самбар", icon: LayoutDashboard },
   { href: "/admin/products", label: "Бүтээгдэхүүн", icon: Package },
+  { href: "/admin/archive", label: "Архив", icon: Archive },
   { href: "/admin/orders", label: "Захиалга", icon: ShoppingCart },
   { href: "/admin/reviews", label: "Сэтгэгдэл", icon: Star },
 ];
@@ -16,7 +17,7 @@ const LINKS = [
 export function AdminSidebar() {
   const path = usePathname();
   return (
-    <aside className="flex gap-1 overflow-x-auto border-b border-line pb-4 lg:flex-col lg:gap-2 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
+    <aside className="flex gap-1 overflow-x-auto border-b border-line pb-4 lg:self-stretch lg:flex-col lg:gap-2 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
       <Link href="/" aria-label={`${SITE.name} нүүр`} className="mb-2 hidden px-4 lg:block">
         <span className="block">
           <Image

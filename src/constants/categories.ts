@@ -30,6 +30,7 @@ export const CATEGORIES: Category[] = [
     description: "Дангаар ашиглах FHD зөөврийн дэлгэц",
     image: img("photo-1547949003-9792a18a2601"),
     subcategories: [
+      { slug: "mon-14", name: "14 инч" },
       { slug: "mon-133", name: "13.3 инч" },
       { slug: "mon-156", name: "15.6 инч" },
       { slug: "mon-16", name: "16 инч" },
@@ -44,6 +45,8 @@ export const CATEGORIES: Category[] = [
       { slug: "ph-case", name: "Кейс" },
       { slug: "ph-charger", name: "Цэнэглэгч" },
       { slug: "ph-cable", name: "Кабель" },
+      { slug: "ph-display", name: "Дэлгэц дамжуулагч" },
+      { slug: "ph-camera", name: "Зураг авалтын хэрэгсэл" },
       { slug: "ph-protector", name: "Дэлгэц хамгаалагч" },
       { slug: "ph-earphone", name: "Чихэвч" },
       { slug: "ph-other", name: "Бусад" },
@@ -57,6 +60,7 @@ export const CATEGORIES: Category[] = [
     subcategories: [
       { slug: "acc-charger", name: "Цэнэглэгч" },
       { slug: "acc-cable", name: "Кабель / Адаптер" },
+      { slug: "acc-printer", name: "Принтер" },
       { slug: "acc-stand", name: "Тавиур" },
       { slug: "acc-case", name: "Хадгалах гэр" },
       { slug: "acc-other", name: "Бусад" },

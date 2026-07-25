@@ -15,7 +15,7 @@ const blank = (): Product => ({
   id: "p-" + Date.now(), title: "", slug: "", price: 0, discount_price: null, images: [],
   category: "laptop", subcategory: "macbook", brand: "Apple", description: "", specifications: [],
   stock: 0, rating: 0, reviews_count: 0, is_featured: false, is_new: true, is_bestseller: false,
-  created_at: new Date().toISOString(),
+  is_archived: false, created_at: new Date().toISOString(),
 });
 
 export function ProductForm({ initial, onSave, onClose }: { initial?: Product; onSave: (p: Product) => void; onClose: () => void }) {

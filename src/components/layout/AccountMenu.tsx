@@ -45,7 +45,7 @@ export function AccountMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 z-50 w-52 overflow-hidden rounded-xl2 border border-line bg-bg shadow-lg">
+        <div className="absolute right-0 top-11 z-50 w-56 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl2 border border-line bg-bg shadow-lg">
           {user ? (
             <>
               <div className="border-b border-line px-4 py-3">
@@ -54,9 +54,11 @@ export function AccountMenu() {
                 </p>
                 <p className="truncate text-xs text-muted">{user.email}</p>
               </div>
-              <button onClick={() => go("/account")} className={item}>
-                <Package size={15} /> Миний захиалга
-              </button>
+              {!isAdmin && (
+                <button onClick={() => go("/account")} className={item}>
+                  <Package size={15} /> Миний захиалга
+                </button>
+              )}
               {isAdmin && (
                 <button onClick={() => go("/admin")} className={item}>
                   <ShieldCheck size={15} /> Админ удирдлага
