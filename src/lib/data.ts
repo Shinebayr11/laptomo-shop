@@ -7,27 +7,12 @@ import {
   visibleProducts,
 } from "./archive-overrides";
 import { getArchiveOverridesFromCookie } from "./archive-overrides-server";
+import { mergeWithSeedProducts } from "./product-catalog";
 import { createServerSupabase, isSupabaseEnabled } from "./supabase/server";
 
 type GetProductsOptions = {
   respectArchiveCookie?: boolean;
 };
-
-/**
- * Бүх өгөгдлийн уншилт энэ давхаргаар дамжина.
- * Supabase тохируулсан бол DB-ээс, үгүй бол seed дата буцаана.
- */
-function mergeWithSeedProducts(products: Product[]): Product[] {
-  const seen = new Set(products.flatMap((p) => [p.id, p.slug]));
-  const missingSeeds = SEED_PRODUCTS.filter(
-    (p) => !seen.has(p.id) && !seen.has(p.slug),
-  );
-
-  return [...products, ...missingSeeds].sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
-}
 
 function publicVisibleProducts(
   products: Product[],

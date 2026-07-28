@@ -17,6 +17,7 @@ import {
   visibleProducts,
   writeArchiveOverridesCookie,
 } from "@/lib/archive-overrides";
+import { mergeWithSeedProducts } from "@/lib/product-catalog";
 import { isSupabaseEnabled } from "@/lib/supabase/client";
 import * as db from "@/lib/admin-data";
 import { useOrders } from "./OrdersContext";
@@ -111,7 +112,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const useDb = supa && dbAvailable;
   const allProducts = applyArchiveOverrides(
-    useDb ? (dbProducts ?? []) : lsProducts,
+    mergeWithSeedProducts(useDb ? (dbProducts ?? []) : lsProducts),
     archiveOverrides,
   );
   const products = visibleProducts(allProducts);

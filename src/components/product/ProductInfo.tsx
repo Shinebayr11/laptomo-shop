@@ -11,6 +11,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Product } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/store/CartContext";
 import { useWishlist } from "@/store/WishlistContext";
 import { formatMNT, discountPercent, effectivePrice, cn } from "@/utils/format";
@@ -20,6 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { findCategory } from "@/constants/categories";
 
 export function ProductInfo({ product }: { product: Product }) {
+  const { user, ready } = useAuth();
   const { add } = useCart();
   const { has, toggle } = useWishlist();
   const router = useRouter();
@@ -28,6 +30,12 @@ export function ProductInfo({ product }: { product: Product }) {
   const cat = findCategory(product.category);
 
   const handleOrder = () => {
+    if (!user) {
+      router.push(
+        `/login?next=${encodeURIComponent(`/products/${product.slug}`)}`,
+      );
+      return;
+    }
     add(product, qty);
     router.push("/checkout");
   };
@@ -97,10 +105,10 @@ export function ProductInfo({ product }: { product: Product }) {
         <Button
           size="lg"
           onClick={handleOrder}
-          disabled={product.stock === 0}
+          disabled={!ready || product.stock === 0}
           className="flex-1"
         >
-          <ShoppingBag size={18} /> Захиалах
+          <ShoppingBag size={18} /> {user ? "Захиалах" : "Нэвтэрч захиалах"}
         </Button>
         <button
           onClick={() => toggle(product.id)}

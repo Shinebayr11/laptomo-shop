@@ -25,8 +25,7 @@ export async function archiveProductDb(id: string): Promise<void> {
     .from("products")
     .update({ is_archived: true })
     .eq("id", id)
-    .select("id")
-    .single();
+    .select("id");
   if (error) throw error;
 }
 
@@ -47,8 +46,7 @@ export async function restoreProductDb(id: string): Promise<void> {
     .from("products")
     .update({ is_archived: false })
     .eq("id", id)
-    .select("id")
-    .single();
+    .select("id");
   if (error) throw error;
 }
 

@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext, useMemo, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, ReactNode } from "react";
 import { CartLine, Product } from "@/types";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useAuth } from "@/hooks/useAuth";
 import { effectivePrice } from "@/utils/format";
 
 interface CartCtx {
@@ -16,9 +17,23 @@ interface CartCtx {
 }
 
 const Ctx = createContext<CartCtx | null>(null);
+const EMPTY_CART: CartLine[] = [];
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [lines, setLines, ready] = useLocalStorage<CartLine[]>("laptomo_cart", []);
+  const { user, ready: authReady } = useAuth();
+  const cartKey = user
+    ? `laptomo_cart_user_${user.id}`
+    : "laptomo_cart_guest";
+  const [storedLines, setLines, cartReady] = useLocalStorage<CartLine[]>(
+    cartKey,
+    [],
+  );
+  const ready = authReady && cartReady;
+  const lines = ready ? storedLines : EMPTY_CART;
+
+  useEffect(() => {
+    localStorage.removeItem("laptomo_cart");
+  }, []);
 
   const add = (product: Product, qty = 1) =>
     setLines((prev) => {

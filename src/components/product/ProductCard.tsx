@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingBag } from "lucide-react";
 import { Product } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/store/CartContext";
 import { useWishlist } from "@/store/WishlistContext";
 import { formatMNT, discountPercent, effectivePrice, cn } from "@/utils/format";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { RatingStars } from "@/components/ui/RatingStars";
 
 export function ProductCard({ product }: { product: Product }) {
+  const { user, ready } = useAuth();
   const { add } = useCart();
   const { has, toggle } = useWishlist();
   const off = discountPercent(product.price, product.discount_price);
@@ -55,14 +57,16 @@ export function ProductCard({ product }: { product: Product }) {
             <span className="font-medium text-ink">{formatMNT(effectivePrice(product.price, product.discount_price))}</span>
             {off > 0 && <span className="text-xs text-muted line-through">{formatMNT(product.price)}</span>}
           </div>
-          <button
-            aria-label="Сагсанд нэмэх"
-            disabled={product.stock === 0}
-            onClick={() => add(product)}
-            className="grid h-10 w-10 place-items-center rounded-full bg-ink text-bg transition-all hover:bg-accent disabled:opacity-30"
-          >
-            <ShoppingBag size={16} />
-          </button>
+          {ready && user && (
+            <button
+              aria-label="Сагсанд нэмэх"
+              disabled={product.stock === 0}
+              onClick={() => add(product)}
+              className="grid h-10 w-10 place-items-center rounded-full bg-ink text-bg transition-all hover:bg-accent disabled:opacity-30"
+            >
+              <ShoppingBag size={16} />
+            </button>
+          )}
         </div>
       </div>
     </div>

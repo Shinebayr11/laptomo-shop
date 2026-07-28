@@ -105,12 +105,71 @@ export function useAuth() {
     setUser(null);
   };
 
+  const requestPasswordReset = async (email: string) => {
+    if (!isSupabaseEnabled) {
+      throw new Error(
+        "Нууц үг сэргээхэд Supabase холболт шаардлагатай байна.",
+      );
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const redirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+            "/reset-password",
+          )}`
+        : undefined;
+
+    try {
+      const { error } = await createClient()!.auth.resetPasswordForEmail(
+        cleanEmail,
+        { redirectTo },
+      );
+      if (error) throw error;
+    } catch (error) {
+      throw normalizeSupabaseError(error);
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    if (!isSupabaseEnabled) {
+      throw new Error(
+        "Нууц үг шинэчлэхэд Supabase холболт шаардлагатай байна.",
+      );
+    }
+
+    try {
+      const supabase = createClient()!;
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!session) {
+        throw new Error("Auth session missing");
+      }
+
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setUser(null);
+
+      await Promise.race([
+        supabase.auth.signOut({ scope: "local" }),
+        new Promise((resolve) => window.setTimeout(resolve, 1500)),
+      ]);
+    } catch (error) {
+      throw normalizeSupabaseError(error);
+    }
+  };
+
   return {
     user,
     ready,
     login,
     register,
     logout,
+    requestPasswordReset,
+    updatePassword,
     isAdmin: user?.role === "admin",
   };
 }

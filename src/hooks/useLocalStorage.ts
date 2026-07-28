@@ -11,7 +11,7 @@ import {
 export function useLocalStorage<T>(key: string, initial: T) {
   const initialRef = useRef(initial);
   const [value, setStoredValue] = useState<T>(initial);
-  const [ready, setReady] = useState(false);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
 
   const readValue = useCallback(() => {
     try {
@@ -24,15 +24,16 @@ export function useLocalStorage<T>(key: string, initial: T) {
 
   useEffect(() => {
     setStoredValue(readValue());
-    setReady(true);
-  }, [readValue]);
+    setLoadedKey(key);
+  }, [key, readValue]);
 
   const setValue: Dispatch<SetStateAction<T>> = useCallback(
     (next) => {
       setStoredValue((prev) => {
+        const currentValue = loadedKey === key ? prev : readValue();
         const resolved =
           typeof next === "function"
-            ? (next as (value: T) => T)(prev)
+            ? (next as (value: T) => T)(currentValue)
             : next;
 
         try {
@@ -47,7 +48,7 @@ export function useLocalStorage<T>(key: string, initial: T) {
         return resolved;
       });
     },
-    [key],
+    [key, loadedKey, readValue],
   );
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export function useLocalStorage<T>(key: string, initial: T) {
         return;
       }
       setStoredValue(readValue());
+      setLoadedKey(key);
     };
 
     window.addEventListener("storage", sync);
@@ -68,6 +70,8 @@ export function useLocalStorage<T>(key: string, initial: T) {
       window.removeEventListener("laptomo-local-storage", sync);
     };
   }, [key, readValue]);
+
+  const ready = loadedKey === key;
 
   return [value, setValue, ready] as const;
 }

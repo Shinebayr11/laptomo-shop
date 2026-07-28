@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { CATEGORIES } from "@/constants/categories";
+import { AuthenticatedCartLink } from "./AuthenticatedCartLink";
 
 export function Footer() {
   return (
@@ -48,7 +49,7 @@ export function Footer() {
           <ul className="space-y-3 text-sm text-muted">
             <li><Link href="/products" className="hover:text-accent">Бүх бүтээгдэхүүн</Link></li>
             <li><Link href="/account" className="hover:text-accent">Миний бүртгэл</Link></li>
-            <li><Link href="/cart" className="hover:text-accent">Сагс</Link></li>
+            <AuthenticatedCartLink />
             <li><Link href="/admin" className="hover:text-accent">Админ</Link></li>
           </ul>
         </div>

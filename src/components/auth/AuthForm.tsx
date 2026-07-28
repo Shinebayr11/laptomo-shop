@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
+import { PasswordInput } from "./PasswordInput";
 
 function authErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "";
@@ -41,20 +42,34 @@ function authErrorMessage(error: unknown) {
   return "Алдаа гарлаа. Мэдээллээ шалгана уу.";
 }
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({
+  mode,
+  nextPath,
+  initialNotice = "",
+}: {
+  mode: "login" | "register";
+  nextPath?: string;
+  initialNotice?: string;
+}) {
   const router = useRouter();
   const { user, ready, isAdmin, login, register } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(initialNotice);
   const [busy, setBusy] = useState(false);
   const isLogin = mode === "login";
+  const customerDestination =
+    nextPath?.startsWith("/") && !nextPath.startsWith("//")
+      ? nextPath
+      : "/account";
 
   useEffect(() => {
-    if (ready && user) router.replace(isAdmin ? "/admin" : "/account");
-  }, [ready, user, isAdmin, router]);
+    if (ready && user) {
+      router.replace(isAdmin ? "/admin" : customerDestination);
+    }
+  }, [ready, user, isAdmin, customerDestination, router]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -85,7 +100,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           return;
         }
       }
-      router.push("/account");
+      router.push(isLogin ? customerDestination : "/account");
     } catch (error) {
       setErr(authErrorMessage(error));
     } finally {
@@ -109,7 +124,21 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       <form onSubmit={submit} className="space-y-4">
         {!isLogin && <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Нэр" className="w-full rounded-lg border border-line bg-bg px-4 py-3 text-sm outline-none focus:border-accent" />}
         <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Имэйл" className="w-full rounded-lg border border-line bg-bg px-4 py-3 text-sm outline-none focus:border-accent" />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Нууц үг" className="w-full rounded-lg border border-line bg-bg px-4 py-3 text-sm outline-none focus:border-accent" />
+        <div>
+          <PasswordInput
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete={isLogin ? "current-password" : "new-password"}
+            placeholder="Нууц үг"
+          />
+          {isLogin && (
+            <div className="mt-2 text-right">
+              <Link href="/forgot-password" className="text-xs text-accent hover:underline">
+                Нууц үгээ мартсан уу?
+              </Link>
+            </div>
+          )}
+        </div>
         {notice && <p className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm leading-6 text-ink">{notice}</p>}
         {err && <p className="text-sm text-red-500">{err}</p>}
         <Button type="submit" size="lg" className="w-full" disabled={busy}>
