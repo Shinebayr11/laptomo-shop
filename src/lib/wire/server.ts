@@ -67,13 +67,18 @@ async function wireRequest<T>(
     headers.set("Idempotency-Key", options.idempotencyKey);
   }
 
+  const method = options.method ?? "GET";
   let response: Response;
   try {
     response = await fetch(`${baseUrl}${path}`, {
-      method: options.method ?? "GET",
+      method,
       headers,
       body: options.body ? JSON.stringify(options.body) : undefined,
-      cache: "no-store",
+      // `cache` сонголт зөвхөн GET дээр. Next.js нь cache-тай хүсэлтийг
+      // дотооддоо Request болгон хувиргах үед POST-ийн body алдагддаг —
+      // Wire "request body is not valid JSON" гэж хариулдаг байсан.
+      // POST-ийг Next ямар ч тохиолдолд cache хийдэггүй тул хэрэггүй.
+      ...(method === "GET" ? { cache: "no-store" as const } : {}),
     });
   } catch {
     throw new WireApiError(
@@ -113,6 +118,13 @@ export function createWirePaymentIntent(
     .map((value) => value.trim())
     .filter(Boolean);
 
+  // Wire нь metadata-д зөвхөн текст утга зөвшөөрдөг. Тоо эсвэл boolean
+  // илгээвэл бүхэл body-г "invalid_json" гэж татгалздаг — алдааны мессеж нь
+  // JSON буруу мэт харагддаг ч үнэндээ утгын төрөл нь шалтгаан.
+  const metadata = Object.fromEntries(
+    Object.entries(input.metadata).map(([key, value]) => [key, String(value)]),
+  );
+
   return wireRequest<WirePaymentIntent>("/v1/payment_intents", {
     method: "POST",
     idempotencyKey,
@@ -121,7 +133,7 @@ export function createWirePaymentIntent(
       currency: "MNT",
       automatic_operator: true,
       allowed_operators: allowedOperators,
-      metadata: input.metadata,
+      metadata,
     },
   });
 }

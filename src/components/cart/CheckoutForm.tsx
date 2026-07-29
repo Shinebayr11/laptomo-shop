@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ExternalLink, RefreshCw, ShieldCheck } from "lucide-react";
 import { CartLine, Order, OrderItem } from "@/types";
-import { WireCheckoutResponse } from "@/lib/wire/types";
+import { WireCheckoutResponse, WireQrAction } from "@/lib/wire/types";
 import { useCart } from "@/store/CartContext";
 import { useOrders } from "@/store/OrdersContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +41,7 @@ type WirePendingState = {
   intentId: string;
   status: string;
   actionUrl: string | null;
+  qr: WireQrAction | null;
 };
 
 const PENDING_WIRE_KEY = "laptomo_pending_wire_checkout";
@@ -229,6 +230,7 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
           intentId,
           status: result.payment_intent.status,
           actionUrl: result.action_url,
+          qr: result.qr,
         });
 
         if (result.failed) {
@@ -355,7 +357,12 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
         intentId: result.payment_intent.id,
         status: result.payment_intent.status,
         actionUrl: result.action_url,
+        qr: result.qr,
       });
+
+      // QR төлбөр бол хуудсан дээрээ QR болон банкны товчнуудыг харуулна.
+      // Deeplink рүү шууд шилжих нь desktop дээр ажиллахгүй.
+      if (result.qr) return;
 
       if (result.action_url) {
         window.location.assign(result.action_url);
@@ -507,6 +514,53 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
               </p>
             </div>
           </div>
+
+          {wirePending.qr && (
+            <div className="mt-4 space-y-4">
+              {wirePending.qr.image_url && (
+                <div className="flex flex-col items-center gap-2">
+                  {/* data: URI тул next/image биш энгийн img ашиглана. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={wirePending.qr.image_url}
+                    alt="Төлбөрийн QR код"
+                    className="h-48 w-48 rounded-lg bg-white p-2"
+                  />
+                  <p className="text-xs text-muted">
+                    Банкны аппаараа QR-ыг уншуулна уу
+                  </p>
+                </div>
+              )}
+
+              {wirePending.qr.deeplinks.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide2 text-muted">
+                    Эсвэл апп сонгоно уу
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {wirePending.qr.deeplinks.map((bank) => (
+                      <a
+                        key={bank.link}
+                        href={bank.link}
+                        className="flex items-center gap-2 rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink transition-colors hover:border-accent hover:text-accent"
+                      >
+                        {bank.logo && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={bank.logo}
+                            alt=""
+                            className="h-6 w-6 shrink-0 rounded"
+                          />
+                        )}
+                        <span className="min-w-0 truncate">{bank.name}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-2">
             {wirePending.actionUrl && (
               <Button

@@ -8,6 +8,7 @@ import {
   findWireActionUrl,
   isWirePaymentComplete,
   isWirePaymentFailed,
+  readWireQrAction,
   WireCheckoutResponse,
 } from "@/lib/wire/types";
 
@@ -46,6 +47,7 @@ export async function GET(
         expires_at: intent.expires_at,
       },
       action_url: findWireActionUrl(intent.next_action),
+      qr: readWireQrAction(intent.next_action),
       complete: isWirePaymentComplete(intent.status),
       failed: isWirePaymentFailed(intent.status),
     };

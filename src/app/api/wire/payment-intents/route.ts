@@ -11,6 +11,7 @@ import {
   findWireActionUrl,
   isWirePaymentComplete,
   isWirePaymentFailed,
+  readWireQrAction,
   WireCheckoutResponse,
   WirePaymentIntent,
 } from "@/lib/wire/types";
@@ -171,6 +172,7 @@ export async function POST(request: NextRequest) {
       payment_intent: clientPaymentIntent(intent),
       order_id: orderId,
       action_url: findWireActionUrl(intent.next_action),
+      qr: readWireQrAction(intent.next_action),
       complete: isWirePaymentComplete(intent.status),
       failed: isWirePaymentFailed(intent.status),
     };

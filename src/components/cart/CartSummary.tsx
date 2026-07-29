@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { formatMNT } from "@/utils/format";
+import { deliveryFee, formatMNT } from "@/utils/format";
 import { Button } from "@/components/ui/Button";
 
 export function CartSummary({ subtotal, cta = true }: { subtotal: number; cta?: boolean }) {
-  const shipping = subtotal > 0 && subtotal < 1000000 ? 15000 : 0;
+  // Хүргэлтийн дүнг заавал deliveryFee()-ээр тооцно — энд давхардуулж бичвэл
+  // сервер талын тооцоотой зөрж, дэлгэц дээр өөр дүн харагдана.
+  const shipping = deliveryFee();
   return (
     <div className="rounded-xl2 border border-line bg-surface p-6">
       <h3 className="font-display text-xl text-ink">Захиалгын дүн</h3>
