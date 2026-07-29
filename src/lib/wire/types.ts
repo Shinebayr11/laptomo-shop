@@ -8,6 +8,7 @@ export interface WirePaymentIntent {
   allowed_operators?: string[];
   selected_operator?: string | null;
   next_action?: unknown;
+  metadata?: Record<string, unknown> | null;
   livemode?: boolean;
   created?: number;
   expires_at?: number;

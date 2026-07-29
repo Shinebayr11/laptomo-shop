@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import { isWireConfigured, retrieveWirePaymentIntent } from "@/lib/wire/server";
 import { isWirePaymentComplete } from "@/lib/wire/types";
 import {
   readPaymentIntentFromEvent,
@@ -51,6 +52,21 @@ export async function POST(request: NextRequest) {
   }
 
   const intent = readPaymentIntentFromEvent(event);
+
+  // Wire нь webhook-д зөвхөн id/amount/charge/object/status/currency илгээдэг —
+  // metadata дотор байдаг order_id ирдэггүй. Тиймээс id-аар нь бүтэн
+  // PaymentIntent-ийг татаж захиалгын дугаарыг авна.
+  let orderId = intent.orderId;
+  if (!orderId && intent.id && isWireConfigured()) {
+    try {
+      const full = await retrieveWirePaymentIntent(intent.id);
+      const value = full.metadata?.order_id;
+      if (typeof value === "string" && value) orderId = value;
+    } catch {
+      // Татаж чадаагүй ч event-ийг алдахгүйн тулд цааш үргэлжлүүлнэ.
+    }
+  }
+
   const supabase = createAdminSupabase();
 
   if (!supabase) {
@@ -68,12 +84,14 @@ export async function POST(request: NextRequest) {
       id: event.id,
       type: event.type,
       payment_intent_id: intent.id,
-      order_id: intent.orderId,
+      order_id: orderId,
       amount: intent.amount,
       succeeded: intent.status ? isWirePaymentComplete(intent.status) : false,
       payload: event as unknown as Record<string, unknown>,
     },
-    { onConflict: "id", ignoreDuplicates: true },
+    // ignoreDuplicates: false — event дахин илгээхэд мөр шинэчлэгдэнэ.
+    // Event id нь primary key тул давхар мөр үүсэхгүй, зөвхөн дарж бичнэ.
+    { onConflict: "id", ignoreDuplicates: false },
   );
 
   if (error) {
