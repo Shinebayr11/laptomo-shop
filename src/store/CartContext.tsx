@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, ReactNode } from "react"
 import { CartLine, Product } from "@/types";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useAuth } from "@/hooks/useAuth";
+import { dropLegacyKey } from "@/lib/legacy-storage";
 import { effectivePrice } from "@/utils/format";
 
 interface CartCtx {
@@ -32,7 +33,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const lines = ready ? storedLines : EMPTY_CART;
 
   useEffect(() => {
-    localStorage.removeItem("laptomo_cart");
+    dropLegacyKey("laptomo_cart");
   }, []);
 
   const add = (product: Product, qty = 1) =>

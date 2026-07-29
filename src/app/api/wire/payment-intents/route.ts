@@ -10,6 +10,7 @@ import {
 import {
   findWireActionUrl,
   isWirePaymentComplete,
+  isWirePaymentFailed,
   WireCheckoutResponse,
   WirePaymentIntent,
 } from "@/lib/wire/types";
@@ -171,6 +172,7 @@ export async function POST(request: NextRequest) {
       order_id: orderId,
       action_url: findWireActionUrl(intent.next_action),
       complete: isWirePaymentComplete(intent.status),
+      failed: isWirePaymentFailed(intent.status),
     };
 
     return NextResponse.json(response);

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ExternalLink, RefreshCw, ShieldCheck } from "lucide-react";
-import { Order } from "@/types";
+import { CartLine, Order, OrderItem } from "@/types";
 import { WireCheckoutResponse } from "@/lib/wire/types";
 import { useCart } from "@/store/CartContext";
 import { useOrders } from "@/store/OrdersContext";
@@ -22,11 +22,19 @@ type CheckoutValues = {
   address: string;
 };
 
+/**
+ * Банкны апп руу шилжихээс өмнө захиалгын бүх мэдээллийг хадгална.
+ * Буцаж ирэхэд сагс дахин ачаалагдаж амжаагүй байдаг тул бараануудыг
+ * энд хуулбарлаж авах ёстой — эс бөгөөс захиалга хоосон бараатай үүснэ.
+ */
 type PendingWireCheckout = {
   intent_id: string;
   order_id: string;
   idempotency_key: string;
   customer: CheckoutValues;
+  items: OrderItem[];
+  user_id: string;
+  created_at: number;
 };
 
 type WirePendingState = {
@@ -36,15 +44,60 @@ type WirePendingState = {
 };
 
 const PENDING_WIRE_KEY = "laptomo_pending_wire_checkout";
+/** Хадгалсан төлбөрийн мэдээлэл хүчинтэй байх хугацаа. */
+const PENDING_WIRE_TTL_MS = 24 * 60 * 60 * 1000;
+/** Банкнаас буцаж ирэхэд төлөв шалгах давталт. */
+const POLL_ATTEMPTS = 5;
+const POLL_DELAY_MS = 3000;
 
+function cartToOrderItems(lines: CartLine[]): OrderItem[] {
+  return lines.map((line) => ({
+    product_id: line.product.id,
+    title: line.product.title,
+    price: effectivePrice(line.product.price, line.product.discount_price),
+    quantity: line.quantity,
+    image: line.product.images[0] ?? "",
+  }));
+}
+
+/**
+ * localStorage ашигласан шалтгаан: QPay / банкны апп нь буцахдаа шинэ tab
+ * нээж болзошгүй бөгөөд sessionStorage тухайн tab-тайгаа хамт алга болдог.
+ */
 function savePendingWireCheckout(pending: PendingWireCheckout) {
-  sessionStorage.setItem(PENDING_WIRE_KEY, JSON.stringify(pending));
+  try {
+    localStorage.setItem(PENDING_WIRE_KEY, JSON.stringify(pending));
+  } catch {
+    /* алгасна */
+  }
+}
+
+function clearPendingWireCheckout() {
+  try {
+    localStorage.removeItem(PENDING_WIRE_KEY);
+    sessionStorage.removeItem(PENDING_WIRE_KEY);
+  } catch {
+    /* алгасна */
+  }
 }
 
 function readPendingWireCheckout(): PendingWireCheckout | null {
   try {
-    const value = sessionStorage.getItem(PENDING_WIRE_KEY);
-    return value ? (JSON.parse(value) as PendingWireCheckout) : null;
+    const value =
+      localStorage.getItem(PENDING_WIRE_KEY) ??
+      // Хуучин хувилбарт sessionStorage ашиглаж байсан.
+      sessionStorage.getItem(PENDING_WIRE_KEY);
+    if (!value) return null;
+
+    const pending = JSON.parse(value) as PendingWireCheckout;
+    if (
+      pending.created_at &&
+      Date.now() - pending.created_at > PENDING_WIRE_TTL_MS
+    ) {
+      clearPendingWireCheckout();
+      return null;
+    }
+    return pending;
   } catch {
     return null;
   }
@@ -60,9 +113,9 @@ async function readApiError(response: Response): Promise<string> {
 export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
   const { lines, subtotal, clear } = useCart();
   const { placeOrder } = useOrders();
-  const { user } = useAuth();
+  const { user, ready: authReady } = useAuth();
   const [form, setForm] = useState({
-    name: user?.name ?? "",
+    name: "",
     phone: "",
     address: "",
   });
@@ -72,78 +125,129 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const checkedReturn = useRef(false);
+  const nameEdited = useRef(false);
+  const unmounted = useRef(false);
+
+  useEffect(() => {
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
+    };
+  }, []);
+
+  /**
+   * user нь localStorage-оос effect дотор уншигддаг тул эхний render-т үргэлж
+   * null байна. Тиймээс нэрийг useState-ийн анхны утгаар биш, ачаалагдсаны
+   * дараа бөглөнө (хэрэглэгч гараар засаагүй тохиолдолд).
+   */
+  useEffect(() => {
+    if (nameEdited.current || !user?.name) return;
+    setForm((f) => (f.name ? f : { ...f, name: user.name }));
+  }, [user?.name]);
 
   const valid = form.name && form.phone.length >= 8 && form.address;
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string, v: string) => {
+    if (k === "name") nameEdited.current = true;
+    setForm((f) => ({ ...f, [k]: v }));
+  };
 
+  /**
+   * items болон userId-г параметрээр авдаг — банкнаас буцаж ирэхэд сагс хоосон
+   * байдаг тул closure дотор баригдсан `lines`-д найдаж болохгүй.
+   */
   const completeOrder = useCallback(
     async (
       customer: CheckoutValues,
       orderId: string | undefined,
       totalPrice: number,
+      items: OrderItem[],
+      userId: string,
     ) => {
       const order = await placeOrder({
         order_id: orderId,
-        user_id: user?.id ?? "guest",
+        user_id: userId,
         customer_name: customer.name,
         customer_phone: customer.phone,
         address: customer.address,
         total_price: totalPrice,
-        items: lines.map((line) => ({
-          product_id: line.product.id,
-          title: line.product.title,
-          price: effectivePrice(
-            line.product.price,
-            line.product.discount_price,
-          ),
-          quantity: line.quantity,
-          image: line.product.images[0] ?? "",
-        })),
+        items,
       });
 
-      sessionStorage.removeItem(PENDING_WIRE_KEY);
+      clearPendingWireCheckout();
       window.history.replaceState(null, "", "/checkout");
       setPlaced(order);
       setWirePending(null);
       onComplete?.();
       clear();
     },
-    [clear, lines, onComplete, placeOrder, user?.id],
+    [clear, onComplete, placeOrder],
   );
 
+  /**
+   * Төлбөрийн төлвийг шалгана. Банк баталгаажуулахад хэдэн секунд зарцуулдаг
+   * тул `attempts` удаа давтан шалгаж, хэрэглэгчийг гараар товч дарахыг
+   * хүлээлгэхгүй.
+   */
   const verifyWirePayment = useCallback(
-    async (intentId: string, pending: PendingWireCheckout) => {
-      const response = await fetch(
-        `/api/wire/payment-intents/${encodeURIComponent(intentId)}`,
-        { cache: "no-store" },
-      );
-      if (!response.ok) throw new Error(await readApiError(response));
+    async (
+      intentId: string,
+      pending: PendingWireCheckout,
+      attempts = 1,
+    ): Promise<void> => {
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        if (attempt > 0) {
+          await new Promise((resolve) =>
+            window.setTimeout(resolve, POLL_DELAY_MS),
+          );
+          if (unmounted.current) return;
+        }
 
-      const result = (await response.json()) as Omit<
-        WireCheckoutResponse,
-        "order_id"
-      >;
-
-      if (result.complete) {
-        await completeOrder(
-          pending.customer,
-          pending.order_id,
-          result.payment_intent.amount,
+        const response = await fetch(
+          `/api/wire/payment-intents/${encodeURIComponent(intentId)}`,
+          { cache: "no-store" },
         );
-        return;
-      }
+        if (!response.ok) throw new Error(await readApiError(response));
 
-      setWirePending({
-        intentId,
-        status: result.payment_intent.status,
-        actionUrl: result.action_url,
-      });
+        const result = (await response.json()) as Omit<
+          WireCheckoutResponse,
+          "order_id"
+        >;
+        if (unmounted.current) return;
+
+        if (result.complete) {
+          await completeOrder(
+            pending.customer,
+            pending.order_id,
+            result.payment_intent.amount,
+            pending.items,
+            pending.user_id,
+          );
+          return;
+        }
+
+        setWirePending({
+          intentId,
+          status: result.payment_intent.status,
+          actionUrl: result.action_url,
+        });
+
+        if (result.failed) {
+          clearPendingWireCheckout();
+          setWirePending(null);
+          throw new Error(
+            "Төлбөр амжилтгүй болсон эсвэл цуцлагдсан байна. Захиалгаа дахин эхлүүлнэ үү.",
+          );
+        }
+      }
     },
     [completeOrder],
   );
 
   useEffect(() => {
     if (checkedReturn.current) return;
+    // authReady-г хүлээхгүй бол clear() зочны сагсыг цэвэрлэж,
+    // хэрэглэгчийн сагс төлбөр төлсний дараа ч дүүрэн үлдэнэ.
+    if (!authReady) return;
 
     const intentId = new URLSearchParams(window.location.search).get(
       "wire_payment_intent",
@@ -154,14 +258,14 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
     const pending = readPendingWireCheckout();
     if (!pending || pending.intent_id !== intentId) {
       setErr(
-        "Төлбөрийн түр мэдээлэл олдсонгүй. Захиалгаа дахин эхлүүлнэ үү.",
+        "Төлбөрийн түр мэдээлэл олдсонгүй. Захиалга үүссэн эсэхийг «Миний захиалга» хэсгээс шалгана уу.",
       );
       return;
     }
 
     setBusy(true);
     setErr(null);
-    verifyWirePayment(intentId, pending)
+    verifyWirePayment(intentId, pending, POLL_ATTEMPTS)
       .catch((error: unknown) =>
         setErr(
           error instanceof Error
@@ -169,8 +273,10 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
             : "Төлбөрийн төлөв шалгахад алдаа гарлаа.",
         ),
       )
-      .finally(() => setBusy(false));
-  }, [verifyWirePayment]);
+      .finally(() => {
+        if (!unmounted.current) setBusy(false);
+      });
+  }, [authReady, verifyWirePayment]);
 
   const submit = async () => {
     if (!valid || busy) return;
@@ -180,12 +286,16 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
     }
     setBusy(true);
     setErr(null);
+    // Сагсны хуулбарыг шилжихээс өмнө авна.
+    const orderItems = cartToOrderItems(lines);
     try {
       if (pay === "cash") {
         await completeOrder(
           form,
           undefined,
           subtotal + deliveryFee(subtotal),
+          orderItems,
+          user.id,
         );
         return;
       }
@@ -217,6 +327,9 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
         order_id: result.order_id,
         idempotency_key: idempotencyKey,
         customer: form,
+        items: orderItems,
+        user_id: user.id,
+        created_at: Date.now(),
       };
       savePendingWireCheckout(pending);
 
@@ -225,8 +338,17 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
           form,
           result.order_id,
           result.payment_intent.amount,
+          orderItems,
+          user.id,
         );
         return;
+      }
+
+      if (result.failed) {
+        clearPendingWireCheckout();
+        throw new Error(
+          "Төлбөрийн хүсэлт цуцлагдсан байна. Дахин оролдоно уу.",
+        );
       }
 
       setWirePending({
@@ -237,7 +359,13 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
 
       if (result.action_url) {
         window.location.assign(result.action_url);
+        return;
       }
+
+      // Operator холбоос ирээгүй бол хэрэглэгч хаашаа ч явахгүй тул мэдэгдэнэ.
+      setErr(
+        "Банкны төлбөрийн холбоос ирсэнгүй. Wire dashboard дээрх operator тохиргоог шалгана уу.",
+      );
     } catch (error) {
       setErr(
         error instanceof Error
@@ -411,11 +539,24 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
                       : "Төлбөрийн төлөв шалгахад алдаа гарлаа.",
                   );
                 } finally {
-                  setBusy(false);
+                  if (!unmounted.current) setBusy(false);
                 }
               }}
             >
               <RefreshCw size={15} /> Төлөв шалгах
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => {
+                clearPendingWireCheckout();
+                setWirePending(null);
+                setErr(null);
+              }}
+            >
+              Цуцлаад дахин эхлэх
             </Button>
           </div>
         </div>
@@ -423,15 +564,19 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
 
       <Button
         onClick={submit}
-        disabled={!valid || busy || !user}
+        // Хүлээгдэж буй төлбөр байхад дахин дарвал хоёр дахь PaymentIntent
+        // үүсч, давхар төлөлт үүсэх эрсдэлтэй.
+        disabled={!valid || busy || !user || Boolean(wirePending)}
         size="lg"
         className="w-full"
       >
         {busy
           ? "Шалгаж байна..."
-          : pay === "wire"
-            ? "Wire-ээр төлөх"
-            : "Захиалга баталгаажуулах"}
+          : wirePending
+            ? "Төлбөр хүлээгдэж байна"
+            : pay === "wire"
+              ? "Wire-ээр төлөх"
+              : "Захиалга баталгаажуулах"}
       </Button>
     </div>
   );

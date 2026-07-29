@@ -8,7 +8,11 @@ import {
 } from "./archive-overrides";
 import { getArchiveOverridesFromCookie } from "./archive-overrides-server";
 import { mergeWithSeedProducts } from "./product-catalog";
-import { createServerSupabase, isSupabaseEnabled } from "./supabase/server";
+import {
+  createServerSupabase,
+  createStaticSupabase,
+  isSupabaseEnabled,
+} from "./supabase/server";
 
 type GetProductsOptions = {
   respectArchiveCookie?: boolean;
@@ -32,7 +36,12 @@ export async function getProducts(
 ): Promise<Product[]> {
   if (!isSupabaseEnabled) return publicVisibleProducts(SEED_PRODUCTS, options);
   try {
-    const sb = createServerSupabase();
+    // Archive cookie хэрэггүй үед cookie-гүй client ашиглана — ингэснээр
+    // request context байхгүй build үед ч DB-ээс жинхэнэ дата уншина.
+    const sb =
+      options.respectArchiveCookie === false
+        ? createStaticSupabase()
+        : createServerSupabase();
     const { data, error } = await sb!.from("products").select("*").order("created_at", { ascending: false });
     if (error || !data?.length) {
       return publicVisibleProducts(SEED_PRODUCTS, options);

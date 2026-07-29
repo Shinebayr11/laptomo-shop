@@ -27,12 +27,26 @@ export interface WireCheckoutResponse {
   order_id: string;
   action_url: string | null;
   complete: boolean;
+  failed: boolean;
 }
 
 const COMPLETE_STATUSES = new Set(["succeeded", "paid", "completed"]);
+/** Дахин хүлээх утгагүй, эцсийн бүтэлгүй төлөвүүд. */
+const FAILED_STATUSES = new Set([
+  "canceled",
+  "cancelled",
+  "failed",
+  "expired",
+  "declined",
+  "voided",
+]);
 
 export function isWirePaymentComplete(status: string): boolean {
   return COMPLETE_STATUSES.has(status.toLowerCase());
+}
+
+export function isWirePaymentFailed(status: string): boolean {
+  return FAILED_STATUSES.has(status.toLowerCase());
 }
 
 export function findWireActionUrl(value: unknown): string | null {

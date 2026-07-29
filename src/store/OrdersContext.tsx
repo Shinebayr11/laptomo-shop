@@ -13,7 +13,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { createClient, isSupabaseEnabled } from "@/lib/supabase/client";
 import {
   fetchOrders,
-  insertOrder,
+  placeOrderDb,
   updateOrderStatusDb,
 } from "@/lib/admin-data";
 
@@ -110,10 +110,17 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     };
     if (supa) {
       try {
-        await insertOrder(order);
-        setDbOrders((prev) => [order, ...(prev ?? [])]);
+        // Нөөц хасалттай хамт бичигдэнэ. Буцаж ирсэн мөрийг ашиглана —
+        // ижил дугаартай захиалга аль хэдийн байвал түүнийг буцаадаг.
+        const saved = await placeOrderDb(order);
+        setDbOrders((prev) => {
+          const list = prev ?? [];
+          return list.some((o) => o.id === saved.id)
+            ? list.map((o) => (o.id === saved.id ? saved : o))
+            : [saved, ...list];
+        });
         setError(null);
-        return order;
+        return saved;
       } catch (saveError) {
         const message =
           saveError instanceof Error

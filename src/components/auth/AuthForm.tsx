@@ -60,16 +60,17 @@ export function AuthForm({
   const [notice, setNotice] = useState(initialNotice);
   const [busy, setBusy] = useState(false);
   const isLogin = mode === "login";
-  const customerDestination =
-    nextPath?.startsWith("/") && !nextPath.startsWith("//")
-      ? nextPath
-      : "/account";
+  const requestedPath =
+    nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : null;
+  const customerDestination = requestedPath ?? "/account";
+  // Хэрэглэгч тодорхой хуудас руу явахаар нэвтэрсэн бол админ ч гэсэн тэндээ очно.
+  const destination = requestedPath ?? (isAdmin ? "/admin" : "/account");
 
   useEffect(() => {
     if (ready && user) {
-      router.replace(isAdmin ? "/admin" : customerDestination);
+      router.replace(destination);
     }
-  }, [ready, user, isAdmin, customerDestination, router]);
+  }, [ready, user, destination, router]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -100,6 +101,7 @@ export function AuthForm({
           return;
         }
       }
+      // Эцсийн чиглүүлэлтийг дээрх effect хийнэ (role тодорхой болсны дараа).
       router.push(isLogin ? customerDestination : "/account");
     } catch (error) {
       setErr(authErrorMessage(error));

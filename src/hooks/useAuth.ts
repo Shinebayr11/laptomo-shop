@@ -1,14 +1,50 @@
 "use client";
+import { useEffect } from "react";
 import { useLocalStorage } from "./useLocalStorage";
 import { AppUser, UserRole } from "@/types";
 import { createClient, isSupabaseEnabled } from "@/lib/supabase/client";
 import { normalizeSupabaseError } from "@/lib/supabase/errors";
+
+/**
+ * Session-ийг хуудас ачаалалт тутамд нэг л удаа шалгана. useAuth-ийг олон
+ * component дууддаг тул module-level хамгаалалт хийхгүй бол давхардана.
+ * useLocalStorage нь event-ээр бүх instance-ыг синк хийдэг тул нэг шалгалт хангалттай.
+ */
+let sessionVerified = false;
+/** login/logout болсныг тэмдэглэнэ — шалгалт нь шинэ төлөвийг дарж болохгүй. */
+let authRevision = 0;
 
 export function useAuth() {
   const [user, setUser, ready] = useLocalStorage<AppUser | null>(
     "laptomo_user",
     null,
   );
+
+  /**
+   * localStorage дахь хэрэглэгчийг жинхэнэ Supabase session-тэй тулгана.
+   * Session дуусах эсвэл localStorage-ийг гараар өөрчлөх үед "нэвтэрсэн" мэт
+   * үлдэж, redirect loop үүсгэдэг байсныг үүгээр таслана.
+   */
+  useEffect(() => {
+    if (!isSupabaseEnabled || !ready || sessionVerified) return;
+    sessionVerified = true;
+
+    let active = true;
+    const revision = authRevision;
+    void (async () => {
+      try {
+        const { data } = await createClient()!.auth.getSession();
+        // Шалгаж байх хооронд нэвтэрсэн бол үр дүнг нь хэрэглэхгүй.
+        if (active && revision === authRevision && !data.session) setUser(null);
+      } catch {
+        /* сүлжээний алдаанд хадгалсан төлөвийг хөндөхгүй */
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [ready, setUser]);
 
   const login = async (email: string, password: string) => {
     const cleanEmail = email.trim().toLowerCase();
@@ -21,6 +57,7 @@ export function useAuth() {
         });
         if (error) throw error;
         if (data.user) {
+          authRevision += 1;
           const { data: profile } = await sb!
             .from("profiles")
             .select("role, name")

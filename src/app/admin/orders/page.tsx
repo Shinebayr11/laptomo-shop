@@ -57,7 +57,13 @@ export default function AdminOrdersPage() {
       )}
 
       {shown.length ? (
-        <OrderTable orders={shown} onStatus={setOrderStatus} />
+        <OrderTable
+          orders={shown}
+          onStatus={(id, status) => {
+            // Алдааг ordersError дээр харуулна — unhandled rejection үүсгэхгүй.
+            void setOrderStatus(id, status).catch(() => {});
+          }}
+        />
       ) : (
         <EmptyState title="Захиалга алга" hint="Энэ төлөвт захиалга байхгүй байна." />
       )}

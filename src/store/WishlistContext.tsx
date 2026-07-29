@@ -1,6 +1,8 @@
 "use client";
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, useEffect, ReactNode } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useAuth } from "@/hooks/useAuth";
+import { migrateLegacyKey } from "@/lib/legacy-storage";
 
 interface WishlistCtx {
   ids: string[];
@@ -11,9 +13,24 @@ interface WishlistCtx {
 }
 
 const Ctx = createContext<WishlistCtx | null>(null);
+const EMPTY_WISHLIST: string[] = [];
+const GUEST_WISHLIST_KEY = "laptomo_wishlist_guest";
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const [ids, setIds, ready] = useLocalStorage<string[]>("laptomo_wishlist", []);
+  const { user, ready: authReady } = useAuth();
+  const wishlistKey = user
+    ? `laptomo_wishlist_user_${user.id}`
+    : GUEST_WISHLIST_KEY;
+  const [storedIds, setIds, wishlistReady] = useLocalStorage<string[]>(
+    wishlistKey,
+    [],
+  );
+  const ready = authReady && wishlistReady;
+  const ids = ready ? storedIds : EMPTY_WISHLIST;
+
+  useEffect(() => {
+    migrateLegacyKey("laptomo_wishlist", GUEST_WISHLIST_KEY);
+  }, []);
 
   const has = (id: string) => ids.includes(id);
   const toggle = (id: string) =>

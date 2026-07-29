@@ -6,13 +6,22 @@ import { Product } from "@/types";
 import { useAdmin } from "@/store/AdminContext";
 import { ProductTable } from "@/components/admin/ProductTable";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { AdminError } from "@/components/admin/AdminError";
 import { Select, TextInput } from "@/components/admin/AdminField";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CATEGORIES } from "@/constants/categories";
 
 export default function AdminProductsPage() {
-  const { products, ready, saveProduct, archiveProduct, archiveProducts } = useAdmin();
+  const {
+    products,
+    ready,
+    saveProduct,
+    archiveProduct,
+    archiveProducts,
+    actionError,
+    clearActionError,
+  } = useAdmin();
   const [editing, setEditing] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -40,7 +49,10 @@ export default function AdminProductsPage() {
 
   const openNew = () => { setEditing(null); setOpen(true); };
   const openEdit = (p: Product) => { setEditing(p); setOpen(true); };
-  const handleSave = (p: Product) => { saveProduct(p); setOpen(false); };
+  const handleSave = async (p: Product) => {
+    // Хадгалалт амжилтгүй бол цонхыг хаахгүй — оруулсан мэдээлэл алдагдахгүй.
+    if (await saveProduct(p)) setOpen(false);
+  };
   const handleArchive = (p: Product) => { if (confirm(`"${p.title}"-г дэлгүүрээс нууж архивлах уу?`)) archiveProduct(p.id); };
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -90,6 +102,8 @@ export default function AdminProductsPage() {
           <Button size="sm" onClick={openNew}><Plus size={16} /> Шинэ нэмэх</Button>
         </div>
       </header>
+
+      <AdminError message={actionError} onDismiss={clearActionError} />
 
       <div className="grid items-start gap-3 xl:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
         <div className="relative">

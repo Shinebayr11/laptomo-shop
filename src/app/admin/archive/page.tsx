@@ -3,6 +3,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { RotateCcw, Search } from "lucide-react";
 import { useAdmin } from "@/store/AdminContext";
+import { AdminError } from "@/components/admin/AdminError";
 import { TextInput } from "@/components/admin/AdminField";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { findCategory } from "@/constants/categories";
@@ -10,7 +11,8 @@ import { effectivePrice, formatDate, formatMNT } from "@/utils/format";
 import { Product } from "@/types";
 
 export default function AdminArchivePage() {
-  const { archivedProducts, ready, restoreProduct } = useAdmin();
+  const { archivedProducts, ready, restoreProduct, actionError, clearActionError } =
+    useAdmin();
   const [q, setQ] = useState("");
 
   if (!ready) return <p className="text-sm text-muted">Ачааллаж байна...</p>;
@@ -35,6 +37,8 @@ export default function AdminArchivePage() {
           </p>
         </div>
       </header>
+
+      <AdminError message={actionError} onDismiss={clearActionError} />
 
       <div className="relative max-w-sm">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />

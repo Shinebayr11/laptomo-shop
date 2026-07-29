@@ -1,6 +1,7 @@
 "use client";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -27,14 +28,17 @@ interface AdminCtx {
   archivedProducts: Product[];
   orders: Order[];
   ordersError: string | null;
+  actionError: string | null;
+  clearActionError: () => void;
   reviews: Review[];
   ready: boolean;
-  saveProduct: (p: Product) => Promise<void>;
+  saveProduct: (p: Product) => Promise<boolean>;
   archiveProduct: (id: string) => Promise<void>;
   archiveProducts: (ids: string[]) => Promise<void>;
   restoreProduct: (id: string) => Promise<void>;
   setOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
   refreshOrders: () => Promise<void>;
+  refreshProducts: () => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
 }
 
@@ -48,7 +52,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     orders,
     ready: ordersReady,
     error: ordersError,
-    setOrderStatus,
+    setOrderStatus: setOrderStatusDb,
     refreshOrders,
   } = useOrders();
 
@@ -66,6 +70,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [dbReviews, setDbReviews] = useState<Review[] | null>(null);
   const [dbReady, setDbReady] = useState(false);
   const [dbAvailable, setDbAvailable] = useState(supa);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supa) return;
@@ -120,9 +125,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const reviews = useDb ? (dbReviews ?? []) : lsReviews;
   const ready = (useDb ? dbReady : r1 && r3) && r4 && ordersReady;
 
-  const setArchiveOverride = (id: string, archived: boolean) => {
-    setArchiveOverrides((prev) => ({ ...prev, [id]: archived }));
-  };
   const setArchiveOverridesForIds = (ids: string[], archived: boolean) => {
     setArchiveOverrides((prev) => {
       const next = { ...prev };
@@ -131,7 +133,27 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const saveProduct = async (p: Product) => {
+  const failureMessage = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
+
+  /** Захиалга үүсэх / цуцлагдахад нөөц өөрчлөгддөг тул DB-ээс дахин уншина. */
+  const refreshProducts = useCallback(async () => {
+    if (!supa) return;
+    try {
+      const next = await db.fetchProducts();
+      setDbProducts(next ?? []);
+    } catch {
+      /* нөөцийн шинэчлэл амжилтгүй бол хуучин утга үлдэнэ */
+    }
+  }, []);
+
+  /** Төлөв солиход нөөц буцаж нэмэгддэг тул барааны жагсаалтыг синк хийнэ. */
+  const setOrderStatus = async (id: string, status: OrderStatus) => {
+    await setOrderStatusDb(id, status);
+    await refreshProducts();
+  };
+
+  const saveProduct = async (p: Product): Promise<boolean> => {
     if (useDb) {
       try {
         await db.upsertProduct(p);
@@ -141,9 +163,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             ? list.map((x) => (x.id === p.id ? p : x))
             : [p, ...list];
         });
-        return;
-      } catch {
-        setDbAvailable(false);
+        setActionError(null);
+        return true;
+      } catch (error) {
+        setActionError(
+          failureMessage(error, "Бүтээгдэхүүнийг хадгалж чадсангүй."),
+        );
+        return false;
       }
     }
 
@@ -152,84 +178,73 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         ? prev.map((x) => (x.id === p.id ? p : x))
         : [p, ...prev],
     );
+    return true;
   };
 
-  const archiveProduct = async (id: string) => {
-    setArchiveOverride(id, true);
-
-    if (useDb) {
-      try {
-        await db.archiveProductDb(id);
-        setDbProducts((prev) =>
-          (prev ?? []).map((p) =>
-            p.id === id ? { ...p, is_archived: true } : p,
-          ),
-        );
-        return;
-      } catch {
-        setDbAvailable(false);
-      }
-    }
-
-    setLsProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, is_archived: true } : p)),
-    );
-  };
-
-  const archiveProducts = async (ids: string[]) => {
+  /**
+   * Архивлах/сэргээх. DB-д байгаа барааг DB дээр, зөвхөн seed дотор байгаа
+   * барааг override-оор зохицуулна. DB бичилт бүтэлгүйтвэл UI-д "амжилттай"
+   * гэж харагдахгүй — алдаа буцаана.
+   */
+  const applyArchived = async (ids: string[], archived: boolean) => {
     if (!ids.length) return;
-    setArchiveOverridesForIds(ids, true);
 
     if (useDb) {
-      try {
-        await db.archiveProductsDb(ids);
-        setDbProducts((prev) =>
-          (prev ?? []).map((p) =>
-            ids.includes(p.id) ? { ...p, is_archived: true } : p,
-          ),
-        );
-        return;
-      } catch {
-        setDbAvailable(false);
+      const dbIds = ids.filter((id) =>
+        (dbProducts ?? []).some((p) => p.id === id),
+      );
+
+      if (dbIds.length) {
+        try {
+          const affected = await db.setProductsArchivedDb(dbIds, archived);
+          if (affected < dbIds.length) {
+            setActionError(
+              "Өөрчлөлт хадгалагдсангүй. Админ эрх байгаа эсэхээ шалгаад дахин оролдоно уу.",
+            );
+            return;
+          }
+          setDbProducts((prev) =>
+            (prev ?? []).map((p) =>
+              dbIds.includes(p.id) ? { ...p, is_archived: archived } : p,
+            ),
+          );
+        } catch (error) {
+          setActionError(
+            failureMessage(error, "Өөрчлөлтийг хадгалж чадсангүй."),
+          );
+          return;
+        }
       }
+
+      setActionError(null);
+      setArchiveOverridesForIds(ids, archived);
+      return;
     }
 
+    setArchiveOverridesForIds(ids, archived);
     setLsProducts((prev) =>
-      prev.map((p) => (ids.includes(p.id) ? { ...p, is_archived: true } : p)),
+      prev.map((p) =>
+        ids.includes(p.id) ? { ...p, is_archived: archived } : p,
+      ),
     );
   };
 
-  const restoreProduct = async (id: string) => {
-    setArchiveOverride(id, false);
-
-    if (useDb) {
-      try {
-        await db.restoreProductDb(id);
-        setDbProducts((prev) =>
-          (prev ?? []).map((p) =>
-            p.id === id ? { ...p, is_archived: false } : p,
-          ),
-        );
-        return;
-      } catch {
-        setDbAvailable(false);
-      }
-    }
-
-    setLsProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, is_archived: false } : p)),
-    );
-  };
+  const archiveProduct = (id: string) => applyArchived([id], true);
+  const archiveProducts = (ids: string[]) => applyArchived(ids, true);
+  const restoreProduct = (id: string) => applyArchived([id], false);
 
   const deleteReview = async (id: string) => {
     if (useDb) {
       try {
         await db.deleteReviewDb(id);
         setDbReviews((prev) => (prev ?? []).filter((r) => r.id !== id));
-        return;
-      } catch {
-        setDbAvailable(false);
+        setActionError(null);
+      } catch (error) {
+        setActionError(
+          failureMessage(error, "Сэтгэгдлийг устгаж чадсангүй."),
+        );
       }
+      return;
     }
 
     setLsReviews((prev) => prev.filter((r) => r.id !== id));
@@ -242,6 +257,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         archivedProducts,
         orders,
         ordersError,
+        actionError,
+        clearActionError: () => setActionError(null),
         reviews,
         ready,
         saveProduct,
@@ -250,6 +267,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         restoreProduct,
         setOrderStatus,
         refreshOrders,
+        refreshProducts,
         deleteReview,
       }}
     >

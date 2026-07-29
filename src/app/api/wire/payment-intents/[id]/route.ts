@@ -7,6 +7,7 @@ import {
 import {
   findWireActionUrl,
   isWirePaymentComplete,
+  isWirePaymentFailed,
   WireCheckoutResponse,
 } from "@/lib/wire/types";
 
@@ -46,6 +47,7 @@ export async function GET(
       },
       action_url: findWireActionUrl(intent.next_action),
       complete: isWirePaymentComplete(intent.status),
+      failed: isWirePaymentFailed(intent.status),
     };
 
     return NextResponse.json(response);

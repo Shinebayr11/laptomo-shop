@@ -1,4 +1,4 @@
-export default function Loading() {
+export function PageLoader() {
   return (
     <div className="grid min-h-[60vh] place-items-center">
       <div className="flex flex-col items-center gap-4">

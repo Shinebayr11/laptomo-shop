@@ -13,6 +13,9 @@ export const SITE = {
   },
 };
 
+/** Үүнээс бага үлдэгдэлтэй барааг "нөөц дуусаж байна" гэж тэмдэглэнэ. */
+export const LOW_STOCK_THRESHOLD = 5;
+
 export const NAV_LINKS = [
   { href: "/", label: "Нүүр" },
   { href: "/products", label: "Бүх бүтээгдэхүүн" },

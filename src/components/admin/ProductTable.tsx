@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Archive, Pencil } from "lucide-react";
 import { Product } from "@/types";
 import { findCategory } from "@/constants/categories";
+import { LOW_STOCK_THRESHOLD } from "@/constants/site";
 import { formatMNT, effectivePrice } from "@/utils/format";
 
 export function ProductTable({
@@ -66,7 +67,21 @@ export function ProductTable({
               <td className="px-4 py-3 text-muted">{findCategory(p.category)?.name ?? p.category}</td>
               <td className="px-4 py-3 text-ink">{formatMNT(effectivePrice(p.price, p.discount_price))}</td>
               <td className="px-4 py-3">
-                <span className={p.stock > 0 ? "text-emerald-600" : "text-red-600"}>{p.stock > 0 ? `${p.stock} ширхэг` : "Дууссан"}</span>
+                <span
+                  className={
+                    p.stock === 0
+                      ? "font-semibold text-red-600"
+                      : p.stock <= LOW_STOCK_THRESHOLD
+                        ? "font-medium text-amber-600"
+                        : "text-emerald-600"
+                  }
+                >
+                  {p.stock === 0
+                    ? "Дууссан"
+                    : p.stock <= LOW_STOCK_THRESHOLD
+                      ? `${p.stock} ширхэг · бага`
+                      : `${p.stock} ширхэг`}
+                </span>
               </td>
               <td className="px-4 py-3">
                 <div className="flex justify-end gap-2">

@@ -12,6 +12,8 @@ export function useLocalStorage<T>(key: string, initial: T) {
   const initialRef = useRef(initial);
   const [value, setStoredValue] = useState<T>(initial);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const valueRef = useRef<T>(initial);
+  const loadedKeyRef = useRef<string | null>(null);
 
   const readValue = useCallback(() => {
     try {
@@ -22,33 +24,39 @@ export function useLocalStorage<T>(key: string, initial: T) {
     }
   }, [key]);
 
+  /** ref болон state-ийг зэрэг шинэчилнэ — updater дотор side effect хийхээс сэргийлнэ. */
+  const commit = useCallback((next: T, nextLoadedKey: string) => {
+    valueRef.current = next;
+    loadedKeyRef.current = nextLoadedKey;
+    setStoredValue(next);
+    setLoadedKey(nextLoadedKey);
+  }, []);
+
   useEffect(() => {
-    setStoredValue(readValue());
-    setLoadedKey(key);
-  }, [key, readValue]);
+    commit(readValue(), key);
+  }, [commit, key, readValue]);
 
   const setValue: Dispatch<SetStateAction<T>> = useCallback(
     (next) => {
-      setStoredValue((prev) => {
-        const currentValue = loadedKey === key ? prev : readValue();
-        const resolved =
-          typeof next === "function"
-            ? (next as (value: T) => T)(currentValue)
-            : next;
+      const current =
+        loadedKeyRef.current === key ? valueRef.current : readValue();
+      const resolved =
+        typeof next === "function"
+          ? (next as (value: T) => T)(current)
+          : next;
 
-        try {
-          localStorage.setItem(key, JSON.stringify(resolved));
-          window.dispatchEvent(
-            new CustomEvent("laptomo-local-storage", { detail: { key } }),
-          );
-        } catch {
-          /* алгасна */
-        }
+      commit(resolved, key);
 
-        return resolved;
-      });
+      try {
+        localStorage.setItem(key, JSON.stringify(resolved));
+        window.dispatchEvent(
+          new CustomEvent("laptomo-local-storage", { detail: { key } }),
+        );
+      } catch {
+        /* алгасна */
+      }
     },
-    [key, loadedKey, readValue],
+    [commit, key, readValue],
   );
 
   useEffect(() => {
@@ -59,8 +67,7 @@ export function useLocalStorage<T>(key: string, initial: T) {
       if (event instanceof CustomEvent && event.detail?.key !== key) {
         return;
       }
-      setStoredValue(readValue());
-      setLoadedKey(key);
+      commit(readValue(), key);
     };
 
     window.addEventListener("storage", sync);
@@ -69,7 +76,7 @@ export function useLocalStorage<T>(key: string, initial: T) {
       window.removeEventListener("storage", sync);
       window.removeEventListener("laptomo-local-storage", sync);
     };
-  }, [key, readValue]);
+  }, [commit, key, readValue]);
 
   const ready = loadedKey === key;
 
