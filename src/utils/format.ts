@@ -24,9 +24,12 @@ export const effectivePrice = (
   discount: number | null,
 ): number => (discount && discount < price ? discount : price);
 
-/** Улаанбаатарт 1сая₮-с дээш үнэгүй, бусад тохиолдолд 15,000₮ */
-export const deliveryFee = (subtotal: number): number =>
-  subtotal > 0 && subtotal < 1000000 ? 15000 : 0;
+/**
+ * Хүргэлт бүх бараан дээр үнэгүй.
+ * Дүн бүрийг энэ функцээр дамжуулдаг тул дараа хураамж нэвтрүүлэх бол
+ * зөвхөн энд өөрчилнө — checkout, сагс, төлбөрийн API гурав нэг дор дагана.
+ */
+export const deliveryFee = (): number => 0;
 
 export const cn = (...classes: (string | false | null | undefined)[]): string =>
   classes.filter(Boolean).join(" ");

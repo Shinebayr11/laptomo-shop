@@ -1,7 +1,7 @@
 import "server-only";
 import { WirePaymentIntent } from "./types";
 
-const DEFAULT_BASE_URL = "https://api.wirepayment.mn";
+const DEFAULT_BASE_URL = "https://api.wire.mn";
 
 type WireErrorBody = {
   error?: {

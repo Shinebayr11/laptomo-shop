@@ -293,7 +293,7 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
         await completeOrder(
           form,
           undefined,
-          subtotal + deliveryFee(subtotal),
+          subtotal + deliveryFee(),
           orderItems,
           user.id,
         );

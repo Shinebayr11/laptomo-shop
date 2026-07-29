@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     subtotal += effectivePrice(product.price, product.discount_price) * quantity;
   }
 
-  const amount = Math.round(subtotal + deliveryFee(subtotal));
+  const amount = Math.round(subtotal + deliveryFee());
   if (!Number.isSafeInteger(amount) || amount <= 0) {
     return errorResponse("Төлбөрийн дүн буруу байна.", 400);
   }
