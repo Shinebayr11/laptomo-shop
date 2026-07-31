@@ -50,7 +50,6 @@ export function Footer() {
             <li><Link href="/products" className="hover:text-accent">Бүх бүтээгдэхүүн</Link></li>
             <li><Link href="/account" className="hover:text-accent">Миний бүртгэл</Link></li>
             <AuthenticatedCartLink />
-            <li><Link href="/admin" className="hover:text-accent">Админ</Link></li>
           </ul>
         </div>
 
