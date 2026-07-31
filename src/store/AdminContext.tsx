@@ -18,7 +18,6 @@ import {
   visibleProducts,
   writeArchiveOverridesCookie,
 } from "@/lib/archive-overrides";
-import { mergeWithSeedProducts } from "@/lib/product-catalog";
 import { isSupabaseEnabled } from "@/lib/supabase/client";
 import * as db from "@/lib/admin-data";
 import { useOrders } from "./OrdersContext";
@@ -116,8 +115,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, [archiveOverrides, r4]);
 
   const useDb = supa && dbAvailable;
+  // DB бол цорын ганц эх сурвалж — seed-тэй нийлүүлэхгүй.
   const allProducts = applyArchiveOverrides(
-    mergeWithSeedProducts(useDb ? (dbProducts ?? []) : lsProducts),
+    useDb ? (dbProducts ?? []) : lsProducts,
     archiveOverrides,
   );
   const products = visibleProducts(allProducts);

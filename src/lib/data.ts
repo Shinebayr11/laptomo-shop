@@ -7,7 +7,6 @@ import {
   visibleProducts,
 } from "./archive-overrides";
 import { getArchiveOverridesFromCookie } from "./archive-overrides-server";
-import { mergeWithSeedProducts } from "./product-catalog";
 import {
   createServerSupabase,
   createStaticSupabase,
@@ -43,10 +42,14 @@ export async function getProducts(
         ? createStaticSupabase()
         : createServerSupabase();
     const { data, error } = await sb!.from("products").select("*").order("created_at", { ascending: false });
-    if (error || !data?.length) {
-      return publicVisibleProducts(SEED_PRODUCTS, options);
-    }
-    return publicVisibleProducts(mergeWithSeedProducts(data as Product[]), options);
+    // Зөвхөн ХОЛБОЛТ амжилтгүй үед seed рүү шилжинэ. Хоосон каталогийг
+    // seed-ээр дүүргэвэл админы устгасан бараа дэлгүүрт эргэж гарна.
+    if (error) return publicVisibleProducts(SEED_PRODUCTS, options);
+
+    // DB бол цорын ганц эх сурвалж. Өмнө нь SEED_PRODUCTS-тэй нийлүүлдэг
+    // байсан тул DB-ээс бараа устгахад кодын seed хувилбар нь орлож,
+    // устгасан бараа дэлгүүрт эргэж гарч ирдэг байв.
+    return publicVisibleProducts((data ?? []) as Product[], options);
   } catch {
     return publicVisibleProducts(SEED_PRODUCTS, options);
   }
