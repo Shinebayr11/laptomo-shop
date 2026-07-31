@@ -13,22 +13,24 @@ export function HomeHero({ products }: { products: Product[] }) {
 
   if (!heroProduct) return null;
 
-  // Hero зураг нь бараан дэвсгэр шингэсэн нэг файл. `mix-blend-screen` нь
-  // хар пиксэлийг "уусгадаг" тул доорх section-ы өнгө дэвсгэр болж харагдана
-  // — ингэснээр theme бүрд өөр өнгө өгөх боломжтой. Screen горим цайвар
-  // өнгөтэй нийлэхэд цайрдаг тул хоёр theme хоёулаа бараан аястай.
+  // Hero нь хоёр theme дээр адилхан бараан. HERO_IMAGE нь бараан дэвсгэр
+  // шингэсэн нэг файл тул CSS-ээр дэвсгэрийг солих боломжгүй —
+  // mix-blend-screen оролдвол light mode дээр бүтээгдэхүүн цайрч, чанар мууддаг.
+  //
+  // Theme бүрд өөр дэвсгэр өгөх бол дэвсгэргүй (transparent) PNG хэрэгтэй.
+  // Тэр үед blend хэрэггүй болж, section-ы өнгийг чөлөөтэй сольж болно.
   return (
-    <section className="relative isolate min-h-[560px] overflow-hidden border-b border-line bg-indigo-950 transition-colors duration-500 dark:bg-zinc-950 sm:min-h-[620px]">
+    <section className="relative isolate min-h-[560px] overflow-hidden border-b border-line bg-zinc-950 sm:min-h-[620px]">
       <Image
         src={HERO_IMAGE}
         alt="LS Tech Store premium monitor setup"
         fill
         priority
         sizes="100vw"
-        className="object-cover object-center mix-blend-screen"
+        className="object-cover object-center"
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-indigo-950 via-indigo-950/55 to-indigo-950/10 transition-colors duration-500 dark:from-zinc-950 dark:via-zinc-950/55 dark:to-zinc-950/10" />
-      <div className="absolute inset-0 bg-gradient-to-t from-indigo-950/35 via-transparent to-transparent transition-colors duration-500 dark:from-zinc-950/35" />
+      <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/55 to-zinc-950/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/35 via-transparent to-transparent" />
 
       <div className="relative z-10 mx-auto flex min-h-[560px] max-w-screen-2xl items-center px-5 py-14 sm:min-h-[620px] sm:py-16 lg:px-8">
         <div className="max-w-xl">
