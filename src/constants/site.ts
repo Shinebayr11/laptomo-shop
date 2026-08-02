@@ -3,7 +3,10 @@ export const SITE = {
   tagline: "Premium laptop & electronics store",
   description:
     "LS Tech Store — premium laptop, electronics, monitor болон дагалдах хэрэгслийн онлайн дэлгүүр. Чанартай бараа, баталгаатай үйлчилгээ, хурдан хүргэлт.",
-  url: "https://lstechstore.mn",
+  // Үндсэн хаяг. Apex (lstechstore.com) нь энэ рүү 308-аар чиглүүлдэг.
+  // Metadata, OG зураг, sitemap бүгд эндээс үүсдэг тул домэйн солиход
+  // зөвхөн энэ мөрийг засна.
+  url: "https://www.lstechstore.com",
   phone: "+976 7700 7700",
   email: "hello@lstechstore.mn",
   address: "Улаанбаатар, Сүхбаатар дүүрэг, Их Тойруу",
