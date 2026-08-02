@@ -62,9 +62,11 @@ export function AuthForm({
   const isLogin = mode === "login";
   const requestedPath =
     nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : null;
-  const customerDestination = requestedPath ?? "/account";
+  // Нэвтэрсний дараа нүүр хуудас руу. Хэрэглэгч захиалгаа хармаар байвал
+  // өөрөө профайл руугаа орно — шууд тэнд хаях нь дэлгүүр үзэхэд саад болдог.
+  const customerDestination = requestedPath ?? "/";
   // Хэрэглэгч тодорхой хуудас руу явахаар нэвтэрсэн бол админ ч гэсэн тэндээ очно.
-  const destination = requestedPath ?? (isAdmin ? "/admin" : "/account");
+  const destination = requestedPath ?? (isAdmin ? "/admin" : "/");
 
   useEffect(() => {
     if (ready && user) {
@@ -102,7 +104,7 @@ export function AuthForm({
         }
       }
       // Эцсийн чиглүүлэлтийг дээрх effect хийнэ (role тодорхой болсны дараа).
-      router.push(isLogin ? customerDestination : "/account");
+      router.push(customerDestination);
     } catch (error) {
       setErr(authErrorMessage(error));
     } finally {
