@@ -28,15 +28,24 @@
 Админ самбар → Бүтээгдэхүүн → бараа бүрийн «Нөөц» талбарыг агуулахын
 бодит үлдэгдлээр солино.
 
-### 3. Захиалгын мэдэгдэл
-Одоо шинэ захиалга ирснийг мэдэх арга байхгүй — админ самбараа өөрөө шалгана.
+### 3. ✅ Захиалгын мэдэгдэл — код бэлэн, тохиргоо үлдсэн
 
-Хоёр хувилбар:
-- **Telegram bot** — BotFather-аас bot үүсгэж token + chat ID авна. Дараа нь
-  Supabase Database Webhook (`orders` хүснэгтэд insert) → `/api/notify/order`.
-  Бэлэн, Wire бүх захиалга дээр ажиллана.
-- **Имэйл** — Resend аль хэдийн тохируулагдсан тул худалдан авагчид баталгаа
-  илгээх боломжтой.
+Захиалга үүсэхэд худалдан авагчид баталгаа, танд мэдэгдэл имэйлээр очно.
+`orders` хүснэгт дээрх Supabase Database Webhook → `/api/notify/order`.
+
+**Үлдсэн алхмууд:**
+
+1. `supabase/stock/06-order-notify.sql` ажиллуулах (`notified_at` багана)
+2. Vercel → Environment Variables:
+   - `RESEND_API_KEY` — Resend-ийн `re_...`
+   - `ADMIN_NOTIFY_EMAIL` — мэдэгдэл хүлээж авах хаяг
+   - `ORDER_NOTIFY_SECRET` — санамсаргүй урт мөр (`openssl rand -hex 32`)
+3. Redeploy
+4. Supabase → Database → Webhooks → Create:
+   - Table: `orders`, Events: **Insert**
+   - Type: HTTP Request, Method: POST
+   - URL: `https://www.lstechstore.com/api/notify/order`
+   - HTTP Header: `x-notify-secret` = дээрх нууц үг
 
 ### 4. Буцаалт гараар
 Захиалга цуцлахад нөөц буцна, гэхдээ **мөнгө автоматаар буцахгүй**.
