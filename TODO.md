@@ -28,24 +28,25 @@
 Админ самбар → Бүтээгдэхүүн → бараа бүрийн «Нөөц» талбарыг агуулахын
 бодит үлдэгдлээр солино.
 
-### 3. ✅ Захиалгын мэдэгдэл — код бэлэн, тохиргоо үлдсэн
+### 3. Захиалгын мэдэгдэл — сүүлийн алхам
 
 Захиалга үүсэхэд худалдан авагчид баталгаа, танд мэдэгдэл имэйлээр очно.
 `orders` хүснэгт дээрх Supabase Database Webhook → `/api/notify/order`.
 
-**Үлдсэн алхмууд:**
+- [x] `supabase/stock/06-order-notify.sql` — `notified_at` багана үүссэн
+- [x] Vercel env: `RESEND_API_KEY`, `ADMIN_NOTIFY_EMAIL`, `ORDER_NOTIFY_SECRET`
+- [x] Redeploy
+- [x] Database Webhooks integration суулгасан (`pg_net`)
+- [ ] **Webhook өөрөө үүсгэх** — Supabase → Integrations → Database Webhooks
+      → Create:
+      - Name: `order-notify` · Table: `public.orders` · Events: зөвхөн **Insert**
+      - Type: HTTP Request · POST
+      - URL: `https://www.lstechstore.com/api/notify/order`
+      - Header: `x-notify-secret` = Vercel дэх `ORDER_NOTIFY_SECRET`-ийн утга
+- [ ] Туршилтын захиалга хийж хоёр имэйл ирсэн эсэхийг шалгах
 
-1. `supabase/stock/06-order-notify.sql` ажиллуулах (`notified_at` багана)
-2. Vercel → Environment Variables:
-   - `RESEND_API_KEY` — Resend-ийн `re_...`
-   - `ADMIN_NOTIFY_EMAIL` — мэдэгдэл хүлээж авах хаяг
-   - `ORDER_NOTIFY_SECRET` — санамсаргүй урт мөр (`openssl rand -hex 32`)
-3. Redeploy
-4. Supabase → Database → Webhooks → Create:
-   - Table: `orders`, Events: **Insert**
-   - Type: HTTP Request, Method: POST
-   - URL: `https://www.lstechstore.com/api/notify/order`
-   - HTTP Header: `x-notify-secret` = дээрх нууц үг
+Ирэхгүй бол: Resend → Logs, Supabase → Webhooks → тухайн hook-ийн
+"Recent runs" хоёрыг харна. 401 = secret зөрсөн, 503 = env дутуу.
 
 ### 4. Буцаалт гараар
 Захиалга цуцлахад нөөц буцна, гэхдээ **мөнгө автоматаар буцахгүй**.
