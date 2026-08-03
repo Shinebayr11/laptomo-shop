@@ -102,5 +102,44 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  /**
+   * Төлбөр амжилттай болсон бол захиалгыг энд үүсгэнэ. Ихэнх тохиолдолд
+   * хэрэглэгч сайт руу буцаж ирээд аль хэдийн үүсгэсэн байна — тэр үед
+   * place_order_for_user нь давхардуулахгүй (order id дээр ON CONFLICT).
+   *
+   * Энэ нь хэрэглэгч төлбөр төлөөд browser-ээ хаасан тохиолдлыг нөхнө.
+   */
+  if (orderId && intent.status && isWirePaymentComplete(intent.status)) {
+    const { data: pending } = await supabase
+      .from("pending_orders")
+      .select("*")
+      .eq("order_id", orderId)
+      .maybeSingle();
+
+    if (pending) {
+      const { error: placeError } = await supabase.rpc(
+        "place_order_for_user",
+        {
+          p_user_id: pending.user_id,
+          p_order_id: pending.order_id,
+          p_customer_name: pending.customer_name,
+          p_customer_phone: pending.customer_phone,
+          p_address: pending.address,
+          p_items: pending.items,
+          p_total_price: pending.total_price,
+        },
+      );
+
+      if (placeError) {
+        // 5xx буцаавал Wire дахин илгээнэ — дараагийн оролдлогод амжилттай
+        // болох боломжтой (жишээ нь түр зуурын DB алдаа).
+        return NextResponse.json(
+          { error: `Захиалга үүсгэж чадсангүй: ${placeError.message}` },
+          { status: 500 },
+        );
+      }
+    }
+  }
+
   return NextResponse.json({ received: true });
 }

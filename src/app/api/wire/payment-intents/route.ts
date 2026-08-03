@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getProducts } from "@/lib/data";
+import { createAdminSupabase } from "@/lib/supabase/admin";
+import { createServerSupabase } from "@/lib/supabase/server";
 import {
   confirmWirePaymentIntent,
   createWirePaymentIntent,
@@ -29,6 +31,7 @@ type CheckoutBody = {
   customer?: {
     name?: unknown;
     phone?: unknown;
+    address?: unknown;
   };
   order_id?: unknown;
   idempotency_key?: unknown;
@@ -67,6 +70,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Захиалгыг хэн өгснийг мэдэх ёстой — төлбөр төлөөд буцаж ирээгүй үед
+  // webhook нь энэ хэрэглэгчийн нэрээр захиалгыг үүсгэнэ.
+  const {
+    data: { user },
+  } = await createServerSupabase()!.auth.getUser();
+  if (!user) {
+    return errorResponse("Захиалга өгөхийн тулд нэвтэрнэ үү.", 401);
+  }
+
   const body = (await request.json().catch(() => null)) as CheckoutBody | null;
   if (!body || !Array.isArray(body.items) || body.items.length === 0) {
     return errorResponse("Сагсны мэдээлэл дутуу байна.", 400);
@@ -84,9 +96,16 @@ export async function POST(request: NextRequest) {
     typeof body.customer?.phone === "string"
       ? body.customer.phone.replace(/\s+/g, "").slice(0, 24)
       : "";
+  const address =
+    typeof body.customer?.address === "string"
+      ? body.customer.address.trim().slice(0, 400)
+      : "";
 
   if (!name || phone.length < 8) {
     return errorResponse("Захиалагчийн нэр, утасны дугаар дутуу байна.", 400);
+  }
+  if (!address) {
+    return errorResponse("Хүргэлтийн хаяг дутуу байна.", 400);
   }
 
   const requestedLines = body.items as CheckoutLine[];
@@ -154,6 +173,39 @@ export async function POST(request: NextRequest) {
       },
       idempotencyKey,
     );
+
+    // Захиалгын мэдээллийг server талд хадгална. Хэрэглэгч төлбөр төлөөд
+    // сайт руу буцаж ирээгүй ч webhook эндээс уншиж захиалгыг үүсгэнэ.
+    // Хадгалж чадаагүй ч төлбөрийг зогсоохгүй — client буцаж ирвэл ажиллана.
+    const admin = createAdminSupabase();
+    if (admin) {
+      const orderItems = Array.from(quantities.entries()).map(
+        ([productId, quantity]) => {
+          const product = productMap.get(productId)!;
+          return {
+            product_id: product.id,
+            title: product.title,
+            price: effectivePrice(product.price, product.discount_price),
+            quantity,
+            image: product.images[0] ?? "",
+          };
+        },
+      );
+
+      await admin.from("pending_orders").upsert(
+        {
+          order_id: orderId,
+          user_id: user.id,
+          payment_intent_id: created.id,
+          customer_name: name,
+          customer_phone: phone,
+          address,
+          items: orderItems,
+          total_price: amount,
+        },
+        { onConflict: "order_id" },
+      );
+    }
 
     let intent = created;
     if (!isWirePaymentComplete(created.status)) {

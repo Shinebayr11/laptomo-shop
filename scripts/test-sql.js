@@ -53,6 +53,7 @@ const SUPABASE_STUB = `
   $fn$;
   do $r$ begin create role anon; exception when duplicate_object then null; end $r$;
   do $r$ begin create role authenticated; exception when duplicate_object then null; end $r$;
+  do $r$ begin create role service_role; exception when duplicate_object then null; end $r$;
 `;
 
 async function withPostgres(port, fn) {
@@ -92,6 +93,8 @@ async function testStockTracking() {
     ok("schema.sql алдаагүй ажиллав");
     await client.query(SQL("stock-tracking.sql"));
     ok("stock-tracking.sql алдаагүй ажиллав");
+    await client.query(SQL("stock/05-pending-orders.sql"));
+    ok("stock/05-pending-orders.sql алдаагүй ажиллав");
 
     const ADMIN = "11111111-1111-1111-1111-111111111111";
     const BUYER = "22222222-2222-2222-2222-222222222222";
@@ -197,6 +200,38 @@ async function testStockTracking() {
     (await client.query("select count(*)::int c from public.orders where id='ORD-5'")).rows[0].c === 1
       ? ok("DB-д мөргүй бараа нөөц хянахгүйгээр захиалагдав")
       : bad("seed-only бараа", "захиалга үүсээгүй");
+
+    // ── pending_orders: төлбөр төлөөд буцаж ирээгүй тохиолдол ──
+    await client.query(`
+      insert into public.pending_orders
+        (order_id, user_id, payment_intent_id, customer_name, customer_phone, address, items, total_price)
+      values ('ORD-W','${BUYER}','pi_x','Веб','99112233','УБ', $1::jsonb, 1499000)
+    `.replace("${BUYER}", BUYER), [items("p-022", 1)]);
+
+    // Webhook нэвтрээгүй тул auth.uid() null — place_order_for_user ашиглана
+    await client.query("select set_config('app.uid','',false)");
+    await client.query(
+      "select public.place_order_for_user($1,'ORD-W','Веб','99112233','УБ',$2::jsonb,1499000)",
+      [BUYER, items("p-022", 1)],
+    );
+    (await client.query("select count(*)::int c from public.orders where id='ORD-W'")).rows[0].c === 1
+      ? ok("session-гүйгээр захиалга үүсэв (webhook-ийн зам)")
+      : bad("webhook зам", "захиалга үүсээгүй");
+    (await stockOf("p-022")) === 5
+      ? ok("нөөц хасагдав (6 → 5)")
+      : bad("webhook нөөц", `stock=${await stockOf("p-022")}`);
+    (await client.query("select count(*)::int c from public.pending_orders where order_id='ORD-W'")).rows[0].c === 0
+      ? ok("pending_orders мөр цэвэрлэгдэв")
+      : bad("цэвэрлэгээ", "мөр үлдсэн");
+
+    // Client аль хэдийн үүсгэсэн байхад webhook дахин дуудвал давхардахгүй
+    await client.query(
+      "select public.place_order_for_user($1,'ORD-W','Веб','99112233','УБ',$2::jsonb,1499000)",
+      [BUYER, items("p-022", 1)],
+    );
+    (await stockOf("p-022")) === 5
+      ? ok("webhook давтахад нөөц дахин хасагдсангүй")
+      : bad("webhook идемпотент", `stock=${await stockOf("p-022")}`);
   });
 }
 

@@ -313,7 +313,13 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
         body: JSON.stringify({
           order_id: orderId,
           idempotency_key: idempotencyKey,
-          customer: { name: form.name, phone: form.phone },
+          // Хаяг сервер талд хадгалагдана — хэрэглэгч төлбөр төлөөд буцаж
+          // ирээгүй ч webhook захиалгыг бүрэн мэдээлэлтэй үүсгэж чадна.
+          customer: {
+            name: form.name,
+            phone: form.phone,
+            address: form.address,
+          },
           items: lines.map((line) => ({
             product_id: line.product.id,
             quantity: line.quantity,
