@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Heart, ShoppingBag } from "lucide-react";
 import { Product } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,14 +21,22 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <div className="group relative flex flex-col">
       <Link href={`/products/${product.slug}`} className="relative block aspect-[384/341] overflow-hidden rounded-xl2 bg-white shadow-sm">
-        <Image
-          src={product.images[0]}
-          alt={product.title}
-          fill
-          unoptimized
-          sizes="(max-width:768px) 50vw, 25vw"
-          className="object-contain p-2 transition-transform duration-700 group-hover:scale-105"
-        />
+        <motion.div
+          className="absolute inset-0"
+          initial={{ y: "60%" }}
+          whileInView={{ y: "0%" }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <Image
+            src={product.images[0]}
+            alt={product.title}
+            fill
+            unoptimized
+            sizes="(max-width:768px) 50vw, 25vw"
+            className="object-contain p-2 transition-transform duration-700 group-hover:scale-105"
+          />
+        </motion.div>
         <div className="absolute left-3 top-3 flex flex-col gap-2">
           {off > 0 && <Badge tone="sale">-{off}%</Badge>}
           {product.is_new && <Badge tone="new">Шинэ</Badge>}
