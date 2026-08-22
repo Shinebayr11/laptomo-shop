@@ -23,10 +23,10 @@ export function ProductCard({ product }: { product: Product }) {
       <Link href={`/products/${product.slug}`} className="relative block aspect-[384/341] overflow-hidden rounded-xl2 bg-white shadow-sm">
         <motion.div
           className="absolute inset-0"
-          initial={{ y: "60%" }}
-          whileInView={{ y: "0%" }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <Image
             src={product.images[0]}

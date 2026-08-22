@@ -30,40 +30,69 @@ export function Footer() {
               />
             </span>
           </Link>
-          <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">{SITE.description}</p>
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
+            {SITE.description}
+          </p>
         </div>
 
         <div>
-          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide2 text-ink">Ангилал</h4>
+          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide2 text-ink">
+            Ангилал
+          </h4>
           <ul className="space-y-3 text-sm text-muted">
             {CATEGORIES.map((c) => (
               <li key={c.slug}>
-                <Link href={`/products?category=${c.slug}`} className="hover:text-accent">{c.name}</Link>
+                <Link
+                  href={`/products?category=${c.slug}`}
+                  className="hover:text-accent"
+                >
+                  {c.name}
+                </Link>
               </li>
             ))}
           </ul>
         </div>
 
         <div>
-          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide2 text-ink">Холбоос</h4>
+          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide2 text-ink">
+            Холбоос
+          </h4>
           <ul className="space-y-3 text-sm text-muted">
-            <li><Link href="/products" className="hover:text-accent">Бүх бүтээгдэхүүн</Link></li>
-            <li><Link href="/account" className="hover:text-accent">Миний бүртгэл</Link></li>
+            <li>
+              <Link href="/products" className="hover:text-accent">
+                Бүх бүтээгдэхүүн
+              </Link>
+            </li>
+            <li>
+              <Link href="/account" className="hover:text-accent">
+                Миний бүртгэл
+              </Link>
+            </li>
             <AuthenticatedCartLink />
           </ul>
         </div>
 
         <div>
-          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide2 text-ink">Холбоо барих</h4>
+          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wide2 text-ink">
+            Холбоо барих
+          </h4>
           <ul className="space-y-3 text-sm text-muted">
-            <li className="flex items-center gap-2"><Phone size={15} className="text-accent" />{SITE.phone}</li>
-            <li className="flex items-center gap-2"><Mail size={15} className="text-accent" />{SITE.email}</li>
-            <li className="flex items-start gap-2"><MapPin size={15} className="mt-0.5 text-accent" />{SITE.address}</li>
+            <li className="flex items-center gap-2">
+              <Phone size={15} className="text-accent" />
+              {SITE.phone}
+            </li>
+            <li className="flex items-center gap-2">
+              <Mail size={15} className="text-accent" />
+              <a href={`mailto:${SITE.email}`} className="hover:text-accent">
+                {SITE.email}
+              </a>
+            </li>
+            <li className="flex items-start gap-2">
+              <MapPin size={15} className="mt-0.5 text-accent" />
+              {SITE.address}
+            </li>
           </ul>
         </div>
-      </div>
-      <div className="border-t border-line py-6 text-center text-xs text-muted">
-        © {new Date().getFullYear()} {SITE.name}. Бүх эрх хуулиар хамгаалагдсан.
       </div>
     </footer>
   );

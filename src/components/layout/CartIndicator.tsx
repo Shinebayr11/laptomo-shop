@@ -11,10 +11,12 @@ export function CartIndicator() {
   const { user, ready } = useAuth();
   return (
     <div className="flex items-center gap-1">
-      <Link href="/wishlist" aria-label="Хадгалсан" className="relative grid h-9 w-9 place-items-center text-ink hover:text-accent">
-        <Heart size={18} />
-        {wish > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent text-[9px] font-bold text-white">{wish}</span>}
-      </Link>
+      {ready && user && (
+        <Link href="/wishlist" aria-label="Хадгалсан" className="relative grid h-9 w-9 place-items-center text-ink hover:text-accent">
+          <Heart size={18} />
+          {wish > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent text-[9px] font-bold text-white">{wish}</span>}
+        </Link>
+      )}
       {ready && user && (
         <Link href="/cart" aria-label="Сагс" className="relative grid h-9 w-9 place-items-center text-ink hover:text-accent">
           <ShoppingBag size={18} />

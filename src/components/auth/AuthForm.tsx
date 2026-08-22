@@ -2,8 +2,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/Button";
 import { PasswordInput } from "./PasswordInput";
 
 function authErrorMessage(error: unknown) {
@@ -145,9 +145,26 @@ export function AuthForm({
         </div>
         {notice && <p className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm leading-6 text-ink">{notice}</p>}
         {err && <p className="text-sm text-red-500">{err}</p>}
-        <Button type="submit" size="lg" className="w-full" disabled={busy}>
-          {busy ? "Түр хүлээнэ үү..." : isLogin ? "Нэвтрэх" : "Бүртгүүлэх"}
-        </Button>
+        <button
+          type="submit"
+          disabled={busy}
+          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-accent to-accent-soft px-8 py-4 text-base font-medium uppercase tracking-wide2 text-white shadow-lg shadow-accent/25 transition-all duration-300 hover:shadow-xl hover:shadow-accent/35 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+        >
+          <span className="absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-500 group-hover:translate-x-0" />
+          <span className="relative flex items-center gap-2">
+            {busy ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Түр хүлээнэ үү...
+              </>
+            ) : (
+              <>
+                {isLogin ? "Нэвтрэх" : "Бүртгүүлэх"}
+                <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+              </>
+            )}
+          </span>
+        </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted">

@@ -76,17 +76,24 @@ export function AccountMenu() {
               </button>
             </>
           ) : (
-            <>
-              <button onClick={() => go("/login")} className={item}>
+            <div className="p-3">
+              <p className="px-1 pb-3 text-xs leading-5 text-muted">
+                Захиалга хийх, дуртай бараагаа хадгалахын тулд бүртгэлдээ
+                нэвтэрнэ үү.
+              </p>
+              <button
+                onClick={() => go("/login")}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-accent to-accent-soft px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-accent/25 transition-all duration-300 hover:shadow-lg hover:shadow-accent/35 active:scale-[0.98]"
+              >
                 <LogIn size={15} /> Нэвтрэх
               </button>
               <button
                 onClick={() => go("/register")}
-                className={`${item} border-t border-line`}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-line px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
               >
                 <UserPlus size={15} /> Бүртгүүлэх
               </button>
-            </>
+            </div>
           )}
         </div>
       )}

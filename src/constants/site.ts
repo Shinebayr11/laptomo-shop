@@ -7,9 +7,9 @@ export const SITE = {
   // Metadata, OG зураг, sitemap бүгд эндээс үүсдэг тул домэйн солиход
   // зөвхөн энэ мөрийг засна.
   url: "https://www.lstechstore.com",
-  phone: "+976 7700 7700",
-  email: "hello@lstechstore.mn",
-  address: "Улаанбаатар, Сүхбаатар дүүрэг, Их Тойруу",
+  phone: "+976 9715 1615",
+  email: "Laptomoscreen@gmail.com",
+  address: "Улаанбаатар, Хан-Уул дүүрэг, 8-хороо, Шинэ яармаг хороолол 746-р байр",
   social: {
     facebook: "https://facebook.com/lstechstore",
     instagram: "https://instagram.com/lstechstore",
