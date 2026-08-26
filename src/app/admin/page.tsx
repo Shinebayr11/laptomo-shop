@@ -21,7 +21,7 @@ export default function AdminDashboardPage() {
   const totalSales = orders
     .filter((o) => o.status !== "cancelled")
     .reduce((sum, o) => sum + o.total_price, 0);
-  const customers = new Set(orders.map((o) => o.user_id)).size;
+  const customers = new Set(orders.map((o) => o.user_id).filter(Boolean)).size;
   const recent = orders.slice(0, 5);
 
   const totalStock = products.reduce((sum, p) => sum + p.stock, 0);

@@ -32,6 +32,29 @@ export async function upsertProduct(p: Product): Promise<void> {
   assertWritten(data, 1);
 }
 
+const PRODUCT_IMAGES_BUCKET = "product-images";
+
+/**
+ * Барааны зургийг Supabase Storage руу upload хийж, нийтэд нээлттэй URL
+ * буцаана. Bucket болон RLS policy-г supabase/product-images-storage.sql
+ * migration үүсгэдэг — ажиллуулаагүй бол алдаа буцна.
+ */
+export async function uploadProductImage(
+  file: File,
+  productId: string,
+): Promise<string> {
+  const sb = createClient();
+  if (!sb) throw new Error("Supabase тохируулаагүй байна.");
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${productId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await sb.storage
+    .from(PRODUCT_IMAGES_BUCKET)
+    .upload(path, file, { cacheControl: "3600", upsert: false });
+  if (error) throw error;
+  const { data } = sb.storage.from(PRODUCT_IMAGES_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 /**
  * Архивлах/сэргээх үйлдлүүд DB-д байхгүй seed бараанд ч дуудагдаж болох тул
  * алдаа шидэхийн оронд бодитоор өөрчлөгдсөн мөрийн тоог буцаана.
