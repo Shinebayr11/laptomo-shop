@@ -39,4 +39,6 @@ insert into public.categories (slug, name, description, image, parent_slug) valu
   ('acc-stand', 'Тавиур', '', '', 'accessory'),
   ('acc-case', 'Хадгалах гэр', '', '', 'accessory'),
   ('acc-other', 'Бусад', '', '', 'accessory')
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+  description = excluded.description,
+  image = excluded.image;
