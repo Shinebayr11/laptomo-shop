@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { getProducts } from "@/lib/data";
+import { getProducts, getCategories } from "@/lib/data";
 import { CatalogView } from "@/components/product/CatalogView";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { SortKey } from "@/types";
@@ -10,7 +10,10 @@ export const metadata: Metadata = { title: "Бүтээгдэхүүн" };
 type Search = { [key: string]: string | undefined };
 
 async function Catalog({ searchParams }: { searchParams: Search }) {
-  const products = await getProducts();
+  const [products, categories] = await Promise.all([
+    getProducts(),
+    getCategories(),
+  ]);
   const initial = {
     query: searchParams.query ?? "",
     category: searchParams.category ?? "",
@@ -26,6 +29,7 @@ async function Catalog({ searchParams }: { searchParams: Search }) {
       // үлддэг байв. key өөрчлөгдөхөд React компонентыг шинээр эхлүүлнэ.
       key={`${initial.query}|${initial.category}|${initial.subcategory}|${initial.brand}|${initial.sort}`}
       products={products}
+      categories={categories}
       initial={initial}
     />
   );

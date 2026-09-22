@@ -1,14 +1,22 @@
 "use client";
 import { useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
-import { Product, ProductFilters } from "@/types";
+import { Category, Product, ProductFilters } from "@/types";
 import { filterProducts, emptyFilters } from "@/utils/filter";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { SortDropdown } from "@/components/filters/SortDropdown";
 import { ProductGrid } from "./ProductGrid";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-export function CatalogView({ products, initial }: { products: Product[]; initial: Partial<ProductFilters> }) {
+export function CatalogView({
+  products,
+  categories,
+  initial,
+}: {
+  products: Product[];
+  categories: Category[];
+  initial: Partial<ProductFilters>;
+}) {
   const [filters, setFilters] = useState<ProductFilters>({ ...emptyFilters, ...initial });
   const [openMobile, setOpenMobile] = useState(false);
 
@@ -32,7 +40,7 @@ export function CatalogView({ products, initial }: { products: Product[]; initia
       </div>
 
       <div className="grid gap-10 lg:grid-cols-[230px_1fr]">
-        <div className="hidden lg:block"><FilterSidebar filters={filters} update={update} reset={reset} /></div>
+        <div className="hidden lg:block"><FilterSidebar categories={categories} filters={filters} update={update} reset={reset} /></div>
         <div>
           {results.length ? <ProductGrid products={results} /> : (
             <EmptyState title="Бараа олдсонгүй" hint="Шүүлтүүрээ өөрчилж дахин оролдоно уу." actionLabel="Шүүлтүүр цэвэрлэх" actionHref="/products" />
@@ -48,7 +56,7 @@ export function CatalogView({ products, initial }: { products: Product[]; initia
               <h2 className="font-display text-xl text-ink">Шүүлтүүр</h2>
               <button onClick={() => setOpenMobile(false)}><X size={20} /></button>
             </div>
-            <FilterSidebar filters={filters} update={update} reset={reset} />
+            <FilterSidebar categories={categories} filters={filters} update={update} reset={reset} />
           </div>
         </div>
       )}

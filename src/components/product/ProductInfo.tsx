@@ -10,7 +10,7 @@ import {
   Truck,
   ShieldCheck,
 } from "lucide-react";
-import { Product } from "@/types";
+import { Category, Product } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/store/CartContext";
 import { useWishlist } from "@/store/WishlistContext";
@@ -18,16 +18,15 @@ import { formatMNT, discountPercent, effectivePrice, cn } from "@/utils/format";
 import { Badge } from "@/components/ui/Badge";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { Button } from "@/components/ui/Button";
-import { findCategory } from "@/constants/categories";
 
-export function ProductInfo({ product }: { product: Product }) {
+export function ProductInfo({ product, categories }: { product: Product; categories: Category[] }) {
   const { user, ready } = useAuth();
   const { add } = useCart();
   const { has, toggle } = useWishlist();
   const router = useRouter();
   const [qty, setQty] = useState(1);
   const off = discountPercent(product.price, product.discount_price);
-  const cat = findCategory(product.category);
+  const cat = categories.find((c) => c.slug === product.category);
 
   const handleOrder = () => {
     if (!user) {

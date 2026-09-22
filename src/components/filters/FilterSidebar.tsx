@@ -1,17 +1,17 @@
 "use client";
-import { CATEGORIES } from "@/constants/categories";
 import { BRANDS } from "@/constants/site";
-import { ProductFilters } from "@/types";
+import { Category, ProductFilters } from "@/types";
 import { cn } from "@/utils/format";
 
 interface Props {
+  categories: Category[];
   filters: ProductFilters;
   update: (patch: Partial<ProductFilters>) => void;
   reset: () => void;
 }
 
-export function FilterSidebar({ filters, update, reset }: Props) {
-  const active = CATEGORIES.find((c) => c.slug === filters.category);
+export function FilterSidebar({ categories, filters, update, reset }: Props) {
+  const active = categories.find((c) => c.slug === filters.category);
   return (
     <aside className="space-y-8">
       <div>
@@ -21,7 +21,7 @@ export function FilterSidebar({ filters, update, reset }: Props) {
         </div>
         <ul className="space-y-2 text-sm">
           <li><button onClick={() => update({ category: "", subcategory: "" })} className={cn("hover:text-accent", !filters.category ? "text-accent" : "text-muted")}>Бүгд</button></li>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <li key={c.slug}>
               <button onClick={() => update({ category: c.slug, subcategory: "" })} className={cn("hover:text-accent", filters.category === c.slug ? "text-accent" : "text-muted")}>{c.name}</button>
             </li>

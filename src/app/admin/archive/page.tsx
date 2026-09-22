@@ -6,16 +6,18 @@ import { useAdmin } from "@/store/AdminContext";
 import { AdminError } from "@/components/admin/AdminError";
 import { TextInput } from "@/components/admin/AdminField";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { findCategory } from "@/constants/categories";
 import { effectivePrice, formatDate, formatMNT } from "@/utils/format";
 import { Product } from "@/types";
 
 export default function AdminArchivePage() {
-  const { archivedProducts, ready, restoreProduct, actionError, clearActionError } =
+  const { archivedProducts, categories, ready, restoreProduct, actionError, clearActionError } =
     useAdmin();
   const [q, setQ] = useState("");
 
   if (!ready) return <p className="text-sm text-muted">Ачааллаж байна...</p>;
+
+  const categoryName = (slug: string) =>
+    categories.find((c) => c.slug === slug)?.name ?? slug;
 
   const filtered = archivedProducts.filter((p) =>
     p.title.toLowerCase().includes(q.toLowerCase()),
@@ -83,7 +85,7 @@ export default function AdminArchivePage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-muted">
-                    {findCategory(p.category)?.name ?? p.category}
+                    {categoryName(p.category)}
                   </td>
                   <td className="px-4 py-3 text-ink">
                     {formatMNT(effectivePrice(p.price, p.discount_price))}

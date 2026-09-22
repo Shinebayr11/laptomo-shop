@@ -2,13 +2,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Archive, LayoutDashboard, Package, ShoppingCart, Star, Store } from "lucide-react";
+import { Archive, LayoutDashboard, Package, ShoppingCart, Star, Store, Tags } from "lucide-react";
 import { SITE } from "@/constants/site";
 import { cn } from "@/utils/format";
 
 const LINKS = [
   { href: "/admin", label: "Хяналтын самбар", icon: LayoutDashboard },
   { href: "/admin/products", label: "Бүтээгдэхүүн", icon: Package },
+  { href: "/admin/categories", label: "Ангилал", icon: Tags },
   { href: "/admin/archive", label: "Архив", icon: Archive },
   { href: "/admin/orders", label: "Захиалга", icon: ShoppingCart },
   { href: "/admin/reviews", label: "Сэтгэгдэл", icon: Star },

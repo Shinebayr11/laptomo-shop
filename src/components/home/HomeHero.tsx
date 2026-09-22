@@ -37,9 +37,9 @@ export function HomeHero({ products }: { products: Product[] }) {
           <p className="text-xs font-semibold uppercase tracking-wide2 text-purple-200">
             LS Tech Store
           </p>
-          <h1 className="mt-4 font-display text-4xl font-bold leading-[0.98] tracking-tightest text-white sm:text-6xl sm:leading-[0.95] xl:text-7xl">
+          <h1 className="mt-4 font-display text-4xl font-bold leading-[0.98] tracking-tightest text-white [text-shadow:0_12px_40px_rgba(0,0,0,0.65),0_2px_10px_rgba(0,0,0,0.45)] sm:text-6xl sm:leading-[0.95] xl:text-7xl">
             Премиум технологи.
-            <span className="block text-purple-300">Ухаалаг сонголт.</span>
+            <span className="block text-purple-300 [text-shadow:0_12px_40px_rgba(124,92,255,0.5),0_2px_10px_rgba(0,0,0,0.45)]">Ухаалаг сонголт.</span>
           </h1>
           <p className="mt-6 max-w-xl text-base leading-7 text-zinc-200 sm:text-lg">
             Laptop, monitor болон хэрэгслийг баталгаатай, хурдан хүргэлттэйгээр

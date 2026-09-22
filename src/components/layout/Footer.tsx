@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { SITE } from "@/constants/site";
-import { CATEGORIES } from "@/constants/categories";
+import { getCategories } from "@/lib/data";
 import { AuthenticatedCartLink } from "./AuthenticatedCartLink";
 
-export function Footer() {
+export async function Footer() {
+  const categories = await getCategories();
   return (
     <footer className="mt-24 border-t border-line bg-surface">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 lg:grid-cols-4 lg:px-8">
@@ -40,7 +41,7 @@ export function Footer() {
             Ангилал
           </h4>
           <ul className="space-y-3 text-sm text-muted">
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <li key={c.slug}>
                 <Link
                   href={`/products?category=${c.slug}`}

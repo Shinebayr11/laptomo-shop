@@ -1,4 +1,4 @@
-import { getProducts } from "@/lib/data";
+import { getProducts, getCategories } from "@/lib/data";
 import { HomeHero } from "@/components/home/HomeHero";
 import { CategoryShowcase } from "@/components/home/CategoryShowcase";
 import { ProductSection } from "@/components/home/ProductSection";
@@ -35,7 +35,10 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
-  const products = await getProducts();
+  const [products, categories] = await Promise.all([
+    getProducts(),
+    getCategories(),
+  ]);
   const featured = products.filter((p) => p.is_featured);
   const newArrivals = products.filter((p) => p.is_new);
   const bestsellers = products.filter((p) => p.is_bestseller);
@@ -48,7 +51,7 @@ export default async function HomePage() {
       <HomeHero products={heroProducts} />
 
       <Reveal>
-        <CategoryShowcase />
+        <CategoryShowcase categories={categories} />
       </Reveal>
 
       <Reveal>

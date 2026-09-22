@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { getProductBySlug, getProducts, getRelatedProducts, getReviews } from "@/lib/data";
+import { getProductBySlug, getProducts, getRelatedProducts, getReviews, getCategories } from "@/lib/data";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
 import { ProductSpecs } from "@/components/product/ProductSpecs";
@@ -24,9 +24,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const product = await getProductBySlug(params.slug);
   if (!product) notFound();
 
-  const [related, reviews] = await Promise.all([
+  const [related, reviews, categories] = await Promise.all([
     getRelatedProducts(product),
     getReviews(product.id),
+    getCategories(),
   ]);
 
   return (
@@ -40,7 +41,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]">
         <ProductGallery images={product.images} title={product.title} />
         <div>
-          <ProductInfo product={product} />
+          <ProductInfo product={product} categories={categories} />
           <ProductSpecs specs={product.specifications} />
         </div>
       </div>

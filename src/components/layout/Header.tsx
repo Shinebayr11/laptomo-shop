@@ -88,10 +88,10 @@ export function Header() {
       </div>
 
       {open && (
-        <div className="border-t border-line bg-bg px-5 py-6 xl:hidden">
+        <div className="border-t border-line bg-bg px-4 py-4 xl:hidden">
           <form
             onSubmit={submit}
-            className="mb-5 flex items-center gap-2 rounded-full border border-line px-4 py-2.5"
+            className="mb-3 flex items-center gap-2 rounded-full border border-line px-4 py-2"
           >
             <Search size={16} className="text-muted" />
             <input
@@ -101,13 +101,13 @@ export function Header() {
               className="w-full bg-transparent text-sm outline-none"
             />
           </form>
-          <nav className="flex flex-col gap-4">
+          <nav className="flex flex-col divide-y divide-line">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="font-display text-lg text-ink"
+                className="py-2.5 text-sm text-ink"
               >
                 {l.label}
               </Link>

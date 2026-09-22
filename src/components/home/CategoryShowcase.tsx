@@ -2,15 +2,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CATEGORIES } from "@/constants/categories";
+import { Category } from "@/types";
 import { SectionHeader } from "./SectionHeader";
 
-export function CategoryShowcase() {
+export function CategoryShowcase({ categories }: { categories: Category[] }) {
   return (
     <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
       <SectionHeader eyebrow="Ангилал" title="Юу хайж байна вэ?" />
       <div className="grid gap-5 md:grid-cols-3">
-        {CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <Link
             key={c.slug}
             href={`/products?category=${c.slug}`}

@@ -43,6 +43,17 @@ export interface Category {
   subcategories: { slug: string; name: string }[];
 }
 
+/** Ангиллын DB дахь хавтгай мөр — админ CRUD энэ хэлбэрээр ажиллана. */
+export interface CategoryRow {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  image: string;
+  parent_slug: string | null;
+  created_at: string;
+}
+
 export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
 export interface OrderItem {

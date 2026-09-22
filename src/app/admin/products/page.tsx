@@ -10,11 +10,11 @@ import { AdminError } from "@/components/admin/AdminError";
 import { Select, TextInput } from "@/components/admin/AdminField";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { CATEGORIES } from "@/constants/categories";
 
 export default function AdminProductsPage() {
   const {
     products,
+    categories,
     ready,
     saveProduct,
     archiveProduct,
@@ -22,6 +22,7 @@ export default function AdminProductsPage() {
     actionError,
     clearActionError,
   } = useAdmin();
+  const parentCategories = categories.filter((c) => !c.parent_slug);
   const [editing, setEditing] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -38,7 +39,7 @@ export default function AdminProductsPage() {
         .map((p) => p.id)
     : [];
   const archiveCategoryName =
-    CATEGORIES.find((category) => category.slug === archiveCategory)?.name ??
+    parentCategories.find((category) => category.slug === archiveCategory)?.name ??
     "ангилал";
 
   useEffect(() => {
@@ -125,7 +126,7 @@ export default function AdminProductsPage() {
               className="h-9"
             >
               <option value="">Ангиллаар архивлах...</option>
-              {CATEGORIES.map((category) => (
+              {parentCategories.map((category) => (
                 <option key={category.slug} value={category.slug}>
                   {category.name}
                 </option>

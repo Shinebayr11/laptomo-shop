@@ -1,7 +1,9 @@
-import { Product, Review, Order } from "@/types";
+import { Category, CategoryRow, Product, Review, Order } from "@/types";
 import { SEED_PRODUCTS } from "@/data/products";
 import { SEED_REVIEWS } from "@/data/reviews";
 import { SEED_ORDERS } from "@/data/orders";
+import { CATEGORIES } from "@/constants/categories";
+import { nestCategories } from "./categories";
 import {
   applyArchiveOverrides,
   visibleProducts,
@@ -90,4 +92,24 @@ export async function getRelatedProducts(product: Product, limit = 4): Promise<P
   return products
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, limit);
+}
+
+/**
+ * Ангилал cookie/session-оос хамаардаггүй тул request context шаардахгүй
+ * createStaticSupabase ашиглана — sitemap, generateStaticParams зэрэг build
+ * үед ч дуудаж болно.
+ */
+export async function getCategories(): Promise<Category[]> {
+  if (!isSupabaseEnabled) return CATEGORIES;
+  try {
+    const sb = createStaticSupabase();
+    const { data, error } = await sb!
+      .from("categories")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (error || !data?.length) return CATEGORIES;
+    return nestCategories(data as CategoryRow[]);
+  } catch {
+    return CATEGORIES;
+  }
 }

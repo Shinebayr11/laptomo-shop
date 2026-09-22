@@ -2,9 +2,10 @@
 import { FormEvent, useRef, useState } from "react";
 import { Loader2, Upload, X } from "lucide-react";
 import { Product } from "@/types";
-import { CATEGORIES, findCategory } from "@/constants/categories";
 import { BRANDS } from "@/constants/site";
 import { uploadProductImage } from "@/lib/admin-data";
+import { nestCategories } from "@/lib/categories";
+import { useAdmin } from "@/store/AdminContext";
 import { cn } from "@/utils/format";
 import { Button } from "@/components/ui/Button";
 import { Field, TextInput, Area, Select } from "./AdminField";
@@ -21,9 +22,11 @@ const blank = (): Product => ({
 });
 
 export function ProductForm({ initial, onSave, onClose }: { initial?: Product; onSave: (p: Product) => void; onClose: () => void }) {
+  const { categories: categoryRows } = useAdmin();
+  const categories = nestCategories(categoryRows);
   const [p, setP] = useState<Product>(initial ?? blank());
   const set = <K extends keyof Product>(k: K, v: Product[K]) => setP((prev) => ({ ...prev, [k]: v }));
-  const subs = findCategory(p.category)?.subcategories ?? [];
+  const subs = categories.find((c) => c.slug === p.category)?.subcategories ?? [];
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -78,7 +81,7 @@ export function ProductForm({ initial, onSave, onClose }: { initial?: Product; o
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Ангилал">
               <Select value={p.category} onChange={(e) => set("category", e.target.value)}>
-                {CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
               </Select>
             </Field>
             <Field label="Дэд ангилал">

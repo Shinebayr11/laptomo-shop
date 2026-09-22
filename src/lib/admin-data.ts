@@ -1,5 +1,5 @@
 import { createClient, isSupabaseEnabled } from "@/lib/supabase/client";
-import { Product, Order, Review, OrderStatus } from "@/types";
+import { Product, Order, Review, OrderStatus, CategoryRow } from "@/types";
 
 /**
  * RLS-д хаагдсан бичилт нь алдаа буцаадаггүй, зүгээр 0 мөр өөрчилдөг.
@@ -171,4 +171,34 @@ export async function updateOrderStatusDb(
     }
     throw new Error(error.message);
   }
+}
+
+// ---------- Ангилал ----------
+export async function fetchCategories(): Promise<CategoryRow[] | null> {
+  if (!isSupabaseEnabled) return null;
+  const sb = createClient();
+  const { data, error } = await sb!
+    .from("categories")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data as CategoryRow[]) ?? [];
+}
+
+export async function upsertCategory(c: CategoryRow): Promise<void> {
+  const sb = createClient();
+  const { data, error } = await sb!.from("categories").upsert(c).select("id");
+  if (error) throw error;
+  assertWritten(data, 1);
+}
+
+export async function deleteCategoryDb(id: string): Promise<void> {
+  const sb = createClient();
+  const { data, error } = await sb!
+    .from("categories")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error) throw error;
+  assertWritten(data, 1);
 }

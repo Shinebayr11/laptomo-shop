@@ -1,7 +1,6 @@
 import { MetadataRoute } from "next";
 import { SITE } from "@/constants/site";
-import { CATEGORIES } from "@/constants/categories";
-import { getProducts } from "@/lib/data";
+import { getProducts, getCategories } from "@/lib/data";
 
 /**
  * Бараа DB-ээс уншигддаг тул sitemap автоматаар шинэчлэгдэнэ — админ самбараас
@@ -12,7 +11,10 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // respectArchiveCookie: false — cookie-гүй client ашиглана. Sitemap нь
   // тодорхой хэрэглэгчийнх биш тул хувийн archive override хамаарахгүй.
-  const products = await getProducts({ respectArchiveCookie: false });
+  const [products, categories] = await Promise.all([
+    getProducts({ respectArchiveCookie: false }),
+    getCategories(),
+  ]);
   const now = new Date();
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -30,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const categoryPages: MetadataRoute.Sitemap = CATEGORIES.map((category) => ({
+  const categoryPages: MetadataRoute.Sitemap = categories.map((category) => ({
     url: `${SITE.url}/products?category=${category.slug}`,
     lastModified: now,
     changeFrequency: "weekly",

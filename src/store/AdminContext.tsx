@@ -4,12 +4,15 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   ReactNode,
 } from "react";
-import { Product, Order, Review, OrderStatus } from "@/types";
+import { Product, Order, Review, OrderStatus, CategoryRow } from "@/types";
 import { SEED_PRODUCTS } from "@/data/products";
 import { SEED_REVIEWS } from "@/data/reviews";
+import { CATEGORIES } from "@/constants/categories";
+import { flattenCategories } from "@/lib/categories";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import {
   ARCHIVE_OVERRIDES_STORAGE_KEY,
@@ -30,6 +33,7 @@ interface AdminCtx {
   actionError: string | null;
   clearActionError: () => void;
   reviews: Review[];
+  categories: CategoryRow[];
   ready: boolean;
   saveProduct: (p: Product) => Promise<boolean>;
   archiveProduct: (id: string) => Promise<void>;
@@ -39,6 +43,8 @@ interface AdminCtx {
   refreshOrders: () => Promise<void>;
   refreshProducts: () => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
+  saveCategory: (c: CategoryRow) => Promise<boolean>;
+  deleteCategory: (id: string) => Promise<boolean>;
 }
 
 const Ctx = createContext<AdminCtx | null>(null);
@@ -63,25 +69,33 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     "laptomo_admin_reviews",
     SEED_REVIEWS,
   );
+  const seedCategoryRows = useMemo(() => flattenCategories(CATEGORIES), []);
+  const [lsCategories, setLsCategories, r5] = useLocalStorage<CategoryRow[]>(
+    "laptomo_admin_categories",
+    seedCategoryRows,
+  );
   const [archiveOverrides, setArchiveOverrides, r4] =
     useLocalStorage<ArchiveOverrides>(ARCHIVE_OVERRIDES_STORAGE_KEY, {});
   const [dbProducts, setDbProducts] = useState<Product[] | null>(null);
   const [dbReviews, setDbReviews] = useState<Review[] | null>(null);
+  const [dbCategories, setDbCategories] = useState<CategoryRow[] | null>(null);
   const [dbReady, setDbReady] = useState(false);
   const [dbAvailable, setDbAvailable] = useState(supa);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supa) return;
-    Promise.all([db.fetchProducts(), db.fetchReviews()])
-      .then(([p, r]) => {
+    Promise.all([db.fetchProducts(), db.fetchReviews(), db.fetchCategories()])
+      .then(([p, r, c]) => {
         setDbProducts(p ?? []);
         setDbReviews(r ?? []);
+        setDbCategories(c ?? []);
       })
       .catch(() => {
         setDbAvailable(false);
         setDbProducts(null);
         setDbReviews(null);
+        setDbCategories(null);
       })
       .finally(() => setDbReady(true));
   }, []);
@@ -123,7 +137,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const products = visibleProducts(allProducts);
   const archivedProducts = archivedOnly(allProducts);
   const reviews = useDb ? (dbReviews ?? []) : lsReviews;
-  const ready = (useDb ? dbReady : r1 && r3) && r4 && ordersReady;
+  const categories = useDb ? (dbCategories ?? []) : lsCategories;
+  const ready = (useDb ? dbReady : r1 && r3 && r5) && r4 && ordersReady;
 
   const setArchiveOverridesForIds = (ids: string[], archived: boolean) => {
     setArchiveOverrides((prev) => {
@@ -250,6 +265,49 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setLsReviews((prev) => prev.filter((r) => r.id !== id));
   };
 
+  const saveCategory = async (c: CategoryRow): Promise<boolean> => {
+    if (useDb) {
+      try {
+        await db.upsertCategory(c);
+        setDbCategories((prev) => {
+          const list = prev ?? [];
+          return list.some((x) => x.id === c.id)
+            ? list.map((x) => (x.id === c.id ? c : x))
+            : [...list, c];
+        });
+        setActionError(null);
+        return true;
+      } catch (error) {
+        setActionError(failureMessage(error, "Ангиллыг хадгалж чадсангүй."));
+        return false;
+      }
+    }
+
+    setLsCategories((prev) =>
+      prev.some((x) => x.id === c.id)
+        ? prev.map((x) => (x.id === c.id ? c : x))
+        : [...prev, c],
+    );
+    return true;
+  };
+
+  const deleteCategory = async (id: string): Promise<boolean> => {
+    if (useDb) {
+      try {
+        await db.deleteCategoryDb(id);
+        setDbCategories((prev) => (prev ?? []).filter((c) => c.id !== id));
+        setActionError(null);
+        return true;
+      } catch (error) {
+        setActionError(failureMessage(error, "Ангиллыг устгаж чадсангүй."));
+        return false;
+      }
+    }
+
+    setLsCategories((prev) => prev.filter((c) => c.id !== id));
+    return true;
+  };
+
   return (
     <Ctx.Provider
       value={{
@@ -260,6 +318,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         actionError,
         clearActionError: () => setActionError(null),
         reviews,
+        categories,
         ready,
         saveProduct,
         archiveProduct,
@@ -269,6 +328,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         refreshOrders,
         refreshProducts,
         deleteReview,
+        saveCategory,
+        deleteCategory,
       }}
     >
       {children}

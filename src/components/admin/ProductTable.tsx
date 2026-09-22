@@ -2,8 +2,8 @@
 import Image from "next/image";
 import { Archive, Pencil } from "lucide-react";
 import { Product } from "@/types";
-import { findCategory } from "@/constants/categories";
 import { LOW_STOCK_THRESHOLD } from "@/constants/site";
+import { useAdmin } from "@/store/AdminContext";
 import { formatMNT, effectivePrice } from "@/utils/format";
 
 export function ProductTable({
@@ -23,6 +23,10 @@ export function ProductTable({
   onEdit: (p: Product) => void;
   onArchive: (p: Product) => void;
 }) {
+  const { categories } = useAdmin();
+  const categoryName = (slug: string) =>
+    categories.find((c) => c.slug === slug)?.name ?? slug;
+
   return (
     <div className="overflow-x-auto rounded-2xl border border-line">
       <table className="w-full min-w-[720px] text-sm">
@@ -64,7 +68,7 @@ export function ProductTable({
                   <span className="line-clamp-1 font-medium text-ink">{p.title}</span>
                 </div>
               </td>
-              <td className="px-4 py-3 text-muted">{findCategory(p.category)?.name ?? p.category}</td>
+              <td className="px-4 py-3 text-muted">{categoryName(p.category)}</td>
               <td className="px-4 py-3 text-ink">{formatMNT(effectivePrice(p.price, p.discount_price))}</td>
               <td className="px-4 py-3">
                 <span
