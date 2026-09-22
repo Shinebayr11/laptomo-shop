@@ -28,10 +28,20 @@ const config: Config = {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        "marquee-up": {
+          "0%": { transform: "translateY(0)" },
+          "100%": { transform: "translateY(-50%)" },
+        },
+        "marquee-down": {
+          "0%": { transform: "translateY(-50%)" },
+          "100%": { transform: "translateY(0)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.7s cubic-bezier(0.16,1,0.3,1) both",
         shimmer: "shimmer 1.6s infinite",
+        "marquee-up": "marquee-up 26s linear infinite",
+        "marquee-down": "marquee-down 32s linear infinite",
       },
     },
   },
