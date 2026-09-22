@@ -1,9 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Product } from "@/types";
 
-const HERO_IMAGE = "/products/hero/ls-tech-hero.png";
 const HERO_PRODUCT_SLUG = "14-triple-portable-monitor";
 
 export function HomeHero({ products }: { products: Product[] }) {
@@ -13,33 +11,19 @@ export function HomeHero({ products }: { products: Product[] }) {
 
   if (!heroProduct) return null;
 
-  // Hero нь хоёр theme дээр адилхан бараан. HERO_IMAGE нь бараан дэвсгэр
-  // шингэсэн нэг файл тул CSS-ээр дэвсгэрийг солих боломжгүй —
-  // mix-blend-screen оролдвол light mode дээр бүтээгдэхүүн цайрч, чанар мууддаг.
-  //
-  // Theme бүрд өөр дэвсгэр өгөх бол дэвсгэргүй (transparent) PNG хэрэгтэй.
-  // Тэр үед blend хэрэггүй болж, section-ы өнгийг чөлөөтэй сольж болно.
   return (
-    <section className="relative isolate min-h-[560px] overflow-hidden border-b border-line bg-zinc-950 sm:min-h-[620px]">
-      <Image
-        src={HERO_IMAGE}
-        alt="LS Tech Store premium monitor setup"
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover object-center"
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/55 to-zinc-950/10" />
-      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/35 via-transparent to-transparent" />
+    <section className="relative isolate min-h-[480px] overflow-hidden border-b border-line bg-zinc-950 sm:min-h-[540px]">
+      <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950" />
+      <div className="pointer-events-none absolute -left-40 top-1/2 h-[520px] w-[520px] -translate-y-1/2 rounded-full bg-purple-700/20 blur-[120px]" />
 
-      <div className="relative z-10 mx-auto flex min-h-[560px] max-w-screen-2xl items-center px-5 py-14 sm:min-h-[620px] sm:py-16 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-[480px] max-w-screen-2xl items-center px-5 py-14 sm:min-h-[540px] sm:py-16 lg:px-8">
         <div className="max-w-xl">
           <p className="text-xs font-semibold uppercase tracking-wide2 text-purple-200">
             LS Tech Store
           </p>
-          <h1 className="mt-4 font-display text-4xl font-bold leading-[0.98] tracking-tightest text-white [text-shadow:0_12px_40px_rgba(0,0,0,0.65),0_2px_10px_rgba(0,0,0,0.45)] sm:text-6xl sm:leading-[0.95] xl:text-7xl">
+          <h1 className="mt-4 font-display text-4xl font-bold leading-[0.98] tracking-tightest text-white sm:text-6xl sm:leading-[0.95] xl:text-7xl">
             Премиум технологи.
-            <span className="block text-purple-300 [text-shadow:0_12px_40px_rgba(124,92,255,0.5),0_2px_10px_rgba(0,0,0,0.45)]">Ухаалаг сонголт.</span>
+            <span className="block text-purple-300">Ухаалаг сонголт.</span>
           </h1>
           <p className="mt-6 max-w-xl text-base leading-7 text-zinc-200 sm:text-lg">
             Laptop, monitor болон хэрэгслийг баталгаатай, хурдан хүргэлттэйгээр
