@@ -4,16 +4,33 @@ import { Review } from "@/types";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { formatDate } from "@/utils/format";
 import { ReviewForm } from "./ReviewForm";
+import { useAuth } from "@/hooks/useAuth";
+import { createClient, isSupabaseEnabled } from "@/lib/supabase/client";
 
 export function ProductReviews({ productId, initial }: { productId: string; initial: Review[] }) {
   const [reviews, setReviews] = useState<Review[]>(initial);
+  const { user, ready } = useAuth();
 
-  const addReview = (rating: number, comment: string) => {
+  const addReview = async (rating: number, comment: string) => {
+    if (!user) throw new Error("Сэтгэгдэл үлдээхийн тулд нэвтэрнэ үү.");
+
     const r: Review = {
-      id: `r-${Date.now()}`, product_id: productId, user_id: "guest",
-      user_name: "Зочин хэрэглэгч", rating, comment, images: [],
+      id: crypto.randomUUID(), product_id: productId, user_id: user.id,
+      user_name: user.name, rating, comment, images: [],
       created_at: new Date().toISOString(),
     };
+
+    if (isSupabaseEnabled) {
+      const { data, error } = await createClient()!
+        .from("reviews")
+        .insert(r)
+        .select("*")
+        .single();
+      if (error) throw new Error(error.message);
+      setReviews((prev) => [data as Review, ...prev]);
+      return;
+    }
+
     setReviews((prev) => [r, ...prev]);
   };
 
@@ -34,7 +51,7 @@ export function ProductReviews({ productId, initial }: { productId: string; init
             </div>
           ))}
         </div>
-        <ReviewForm onSubmit={addReview} />
+        <ReviewForm onSubmit={addReview} canSubmit={ready && Boolean(user)} />
       </div>
     </section>
   );

@@ -74,6 +74,8 @@ export interface Order {
   total_price: number;
   status: OrderStatus;
   created_at: string;
+  notified_at?: string | null;
+  notification_claimed_at?: string | null;
 }
 
 export interface Review {

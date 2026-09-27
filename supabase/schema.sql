@@ -120,8 +120,15 @@ alter table public.reviews    enable row level security;
 
 -- PROFILES: хэрэглэгч өөрийнхөө мэдээллийг харна, админ бүгдийг
 create policy "profiles_select_own" on public.profiles for select using (auth.uid() = id or public.is_admin());
-create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id);
+create policy "profiles_update_own" on public.profiles for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
 create policy "profiles_insert_self" on public.profiles for insert with check (auth.uid() = id);
+
+-- Хэрэглэгч зөвхөн нэрээ өөрчилнө. role/email нь privileged талбар тул
+-- table-level UPDATE эрхээр дамжин өөрчлөгдөх ёсгүй.
+revoke update on public.profiles from authenticated;
+grant update (name) on public.profiles to authenticated;
 
 -- CATEGORIES & PRODUCTS: нийтэд унших, зөвхөн админ бичих
 create policy "categories_public_read" on public.categories for select using (true);

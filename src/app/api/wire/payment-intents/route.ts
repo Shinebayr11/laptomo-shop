@@ -33,8 +33,6 @@ type CheckoutBody = {
     phone?: unknown;
     address?: unknown;
   };
-  order_id?: unknown;
-  idempotency_key?: unknown;
 };
 
 function errorResponse(message: string, status: number) {
@@ -53,15 +51,6 @@ function clientPaymentIntent(intent: WirePaymentIntent) {
   };
 }
 
-function validToken(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length >= 8 &&
-    value.length <= 160 &&
-    /^[A-Za-z0-9:_-]+$/.test(value)
-  );
-}
-
 export async function POST(request: NextRequest) {
   if (!isWireConfigured()) {
     return errorResponse(
@@ -77,6 +66,14 @@ export async function POST(request: NextRequest) {
   } = await createServerSupabase()!.auth.getUser();
   if (!user) {
     return errorResponse("Захиалга өгөхийн тулд нэвтэрнэ үү.", 401);
+  }
+
+  const admin = createAdminSupabase();
+  if (!admin) {
+    return errorResponse(
+      "Захиалга хадгалах server тохиргоо дутуу байна.",
+      503,
+    );
   }
 
   const body = (await request.json().catch(() => null)) as CheckoutBody | null;
@@ -149,14 +146,12 @@ export async function POST(request: NextRequest) {
     return errorResponse("Төлбөрийн дүн буруу байна.", 400);
   }
 
-  const orderId = validToken(body.order_id)
-    ? body.order_id
-    : `ORD-${Date.now().toString(36).toUpperCase()}-${randomUUID()
-        .slice(0, 4)
-        .toUpperCase()}`;
-  const idempotencyKey = validToken(body.idempotency_key)
-    ? body.idempotency_key
-    : randomUUID();
+  // Эдгээр утгыг client-ээс авахгүй. Ингэснээр өөр хэрэглэгчийн pending
+  // захиалгыг таасан id-аар дарж бичих боломжгүй.
+  const orderId = `ORD-${Date.now().toString(36).toUpperCase()}-${randomUUID()
+    .slice(0, 12)
+    .toUpperCase()}`;
+  const idempotencyKey = randomUUID();
 
   try {
     const created = await createWirePaymentIntent(
@@ -176,34 +171,37 @@ export async function POST(request: NextRequest) {
 
     // Захиалгын мэдээллийг server талд хадгална. Хэрэглэгч төлбөр төлөөд
     // сайт руу буцаж ирээгүй ч webhook эндээс уншиж захиалгыг үүсгэнэ.
-    // Хадгалж чадаагүй ч төлбөрийг зогсоохгүй — client буцаж ирвэл ажиллана.
-    const admin = createAdminSupabase();
-    if (admin) {
-      const orderItems = Array.from(quantities.entries()).map(
-        ([productId, quantity]) => {
-          const product = productMap.get(productId)!;
-          return {
-            product_id: product.id,
-            title: product.title,
-            price: effectivePrice(product.price, product.discount_price),
-            quantity,
-            image: product.images[0] ?? "",
-          };
-        },
-      );
+    // Энэ бичилт амжилттай болсны дараа л төлбөрийг баталгаажуулна.
+    const orderItems = Array.from(quantities.entries()).map(
+      ([productId, quantity]) => {
+        const product = productMap.get(productId)!;
+        return {
+          product_id: product.id,
+          title: product.title,
+          price: effectivePrice(product.price, product.discount_price),
+          quantity,
+          image: product.images[0] ?? "",
+        };
+      },
+    );
 
-      await admin.from("pending_orders").upsert(
-        {
-          order_id: orderId,
-          user_id: user.id,
-          payment_intent_id: created.id,
-          customer_name: name,
-          customer_phone: phone,
-          address,
-          items: orderItems,
-          total_price: amount,
-        },
-        { onConflict: "order_id" },
+    const { error: pendingError } = await admin.from("pending_orders").insert(
+      {
+        order_id: orderId,
+        user_id: user.id,
+        payment_intent_id: created.id,
+        customer_name: name,
+        customer_phone: phone,
+        address,
+        items: orderItems,
+        total_price: amount,
+      },
+    );
+
+    if (pendingError) {
+      return errorResponse(
+        `Захиалгын мэдээлэл хадгалж чадсангүй: ${pendingError.message}`,
+        503,
       );
     }
 

@@ -302,17 +302,10 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
         return;
       }
 
-      const orderId = `ORD-${Date.now().toString(36).toUpperCase()}-${crypto
-        .randomUUID()
-        .slice(0, 4)
-        .toUpperCase()}`;
-      const idempotencyKey = crypto.randomUUID();
       const response = await fetch("/api/wire/payment-intents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          order_id: orderId,
-          idempotency_key: idempotencyKey,
           // Хаяг сервер талд хадгалагдана — хэрэглэгч төлбөр төлөөд буцаж
           // ирээгүй ч webhook захиалгыг бүрэн мэдээлэлтэй үүсгэж чадна.
           customer: {
@@ -333,7 +326,7 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
       const pending: PendingWireCheckout = {
         intent_id: result.payment_intent.id,
         order_id: result.order_id,
-        idempotency_key: idempotencyKey,
+        idempotency_key: result.payment_intent.id,
         customer: form,
         items: orderItems,
         user_id: user.id,

@@ -59,6 +59,9 @@ begin
   -- Мөр буцаагүй бол захиалга аль хэдийн үүссэн байна — нөөцийг дахин хасахгүй.
   if v_order.id is null then
     select * into v_order from public.orders where id = p_order_id;
+    if v_order.user_id is distinct from v_uid then
+      raise exception 'Энэ захиалгын дугаар өөр хэрэглэгчид хамаарна';
+    end if;
     return v_order;
   end if;
 
@@ -85,7 +88,7 @@ begin
     -- DB-д мөр байхгүй бол (зөвхөн кодын seed дотор байгаа бараа) нөөц хянах
     -- боломжгүй тул алгасна. Бүх барааг DB-д оруулбал энэ салбар ажиллахаа болино.
     if v_title is null then
-      continue;
+      raise exception 'Бараа олдсонгүй: %', v_product_id;
     end if;
 
     v_expected := v_expected + v_unit_price * v_quantity;

@@ -57,13 +57,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // notified_at тэмдэглэгээг эхлээд тавина. Мөр шинэчлэгдээгүй бол өөр
-  // дуудлага аль хэдийн боловсруулсан гэсэн үг — давхар илгээхгүй.
+  // Түр claim авна. 10 минутаас хуучин claim-ийг өмнөх process тасарсан гэж
+  // үзээд дахин авах боломжтой. notified_at-г зөвхөн илгээсний дараа тавина.
+  const staleClaim = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const claimedAt = new Date().toISOString();
   const { data: claimed } = await supabase
     .from("orders")
-    .update({ notified_at: new Date().toISOString() })
+    .update({ notification_claimed_at: claimedAt })
     .eq("id", orderId)
     .is("notified_at", null)
+    .or(`notification_claimed_at.is.null,notification_claimed_at.lt.${staleClaim}`)
     .select("*")
     .maybeSingle();
 
@@ -71,13 +74,18 @@ export async function POST(request: NextRequest) {
     // Мөр эзэмшиж чадсангүй: захиалга байхгүй, аль хэдийн илгээгдсэн,
     // эсвэл notified_at багана үүсээгүй (06-order-notify.sql ажиллаагүй).
     return NextResponse.json({
-      skipped: "захиалга олдсонгүй эсвэл аль хэдийн илгээгдсэн",
+      skipped: "захиалга олдсонгүй, аль хэдийн илгээгдсэн эсвэл боловсруулагдаж байна",
     });
   }
 
   const order = claimed as Order;
 
   if (!isEmailConfigured()) {
+    await supabase
+      .from("orders")
+      .update({ notification_claimed_at: null })
+      .eq("id", orderId)
+      .eq("notification_claimed_at", claimedAt);
     return NextResponse.json(
       { error: "RESEND_API_KEY тохируулаагүй байна." },
       { status: 503 },
@@ -115,6 +123,35 @@ export async function POST(request: NextRequest) {
     html: adminMail.html,
   });
   results.admin = sentAdmin.ok ? "sent" : sentAdmin.error;
+
+  const allSent = (!customerEmail || results.customer === "sent") && sentAdmin.ok;
+  if (!allSent) {
+    await supabase
+      .from("orders")
+      .update({ notification_claimed_at: null })
+      .eq("id", orderId)
+      .eq("notification_claimed_at", claimedAt);
+    return NextResponse.json(
+      { order_id: orderId, ...results },
+      { status: 503 },
+    );
+  }
+
+  const { error: finishError } = await supabase
+    .from("orders")
+    .update({
+      notified_at: new Date().toISOString(),
+      notification_claimed_at: null,
+    })
+    .eq("id", orderId)
+    .eq("notification_claimed_at", claimedAt);
+
+  if (finishError) {
+    return NextResponse.json(
+      { error: `Мэдэгдлийн төлөв хадгалж чадсангүй: ${finishError.message}` },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({ order_id: orderId, ...results });
 }

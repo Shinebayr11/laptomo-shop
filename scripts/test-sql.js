@@ -196,12 +196,29 @@ async function testStockTracking() {
       : bad("зэрэгцээ захиалга", `хоёр дахь=${racerError} нөөц=${left}`);
 
     await asUser(client, BUYER);
-    await place("ORD-5", items("p-999", 1), 500000);
-    (await client.query("select count(*)::int c from public.orders where id='ORD-5'")).rows[0].c === 1
-      ? ok("DB-д мөргүй бараа нөөц хянахгүйгээр захиалагдав")
-      : bad("seed-only бараа", "захиалга үүсээгүй");
+    let missingProductError = "";
+    try {
+      await place("ORD-5", items("p-999", 1), 500000);
+    } catch (error) {
+      missingProductError = error.message;
+    }
+    missingProductError.includes("Бараа олдсонгүй")
+      ? ok("DB-д мөргүй барааг захиалахаас татгалзав")
+      : bad("байхгүй бараа", missingProductError || "алдаа өгөөгүй");
+
+    await asUser(client, BUYER2);
+    let ownershipError = "";
+    try {
+      await place("ORD-1", items("p-022", 1), 1499000);
+    } catch (error) {
+      ownershipError = error.message;
+    }
+    ownershipError.includes("өөр хэрэглэгчид хамаарна")
+      ? ok("өөр хэрэглэгчийн order id-г ашиглахад татгалзав")
+      : bad("order ownership", ownershipError || "алдаа өгөөгүй");
 
     // ── pending_orders: төлбөр төлөөд буцаж ирээгүй тохиолдол ──
+    await asUser(client, BUYER);
     await client.query(`
       insert into public.pending_orders
         (order_id, user_id, payment_intent_id, customer_name, customer_phone, address, items, total_price)

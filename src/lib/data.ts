@@ -67,8 +67,8 @@ export async function getReviews(productId?: string): Promise<Review[]> {
   if (isSupabaseEnabled) {
     try {
       const sb = createServerSupabase();
-      const { data } = await sb!.from("reviews").select("*").order("created_at", { ascending: false });
-      if (data?.length) list = data as Review[];
+      const { data, error } = await sb!.from("reviews").select("*").order("created_at", { ascending: false });
+      if (!error) list = (data ?? []) as Review[];
     } catch {
       /* seed руу шилжинэ */
     }
