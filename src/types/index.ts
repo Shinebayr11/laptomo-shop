@@ -51,6 +51,7 @@ export interface CategoryRow {
   description: string;
   image: string;
   parent_slug: string | null;
+  is_archived?: boolean;
   created_at: string;
 }
 
@@ -76,6 +77,8 @@ export interface Order {
   created_at: string;
   notified_at?: string | null;
   notification_claimed_at?: string | null;
+  customer_notified_at?: string | null;
+  admin_notified_at?: string | null;
 }
 
 export interface Review {

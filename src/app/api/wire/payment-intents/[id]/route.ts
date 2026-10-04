@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createAdminSupabase } from "@/lib/supabase/admin";
+import { createServerSupabase } from "@/lib/supabase/server";
 import {
   isWireConfigured,
   retrieveWirePaymentIntent,
@@ -31,6 +33,84 @@ export async function GET(
     return NextResponse.json(
       { error: "Төлбөрийн хүсэлтийн дугаар буруу байна." },
       { status: 400 },
+    );
+  }
+
+  const authClient = createServerSupabase();
+  const admin = createAdminSupabase();
+  if (!authClient || !admin) {
+    return NextResponse.json(
+      { error: "Төлбөрийн server тохиргоо дутуу байна." },
+      { status: 503 },
+    );
+  }
+
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: "Төлбөрийн төлөв шалгахын тулд нэвтэрнэ үү." },
+      { status: 401 },
+    );
+  }
+
+  // Хүлээгдэж буй мөр байвал түүгээр, webhook захиалгыг аль хэдийн үүсгэсэн
+  // бол payment_events → orders холбоосоор ownership-ийг шалгана.
+  const { data: pending, error: pendingError } = await admin
+    .from("pending_orders")
+    .select("order_id")
+    .eq("payment_intent_id", params.id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (pendingError) {
+    return NextResponse.json(
+      { error: "Төлбөрийн эзэмшигчийг шалгаж чадсангүй." },
+      { status: 503 },
+    );
+  }
+
+  let authorized = Boolean(pending);
+  if (!authorized) {
+    const { data: event, error: eventError } = await admin
+      .from("payment_events")
+      .select("order_id")
+      .eq("payment_intent_id", params.id)
+      .not("order_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (eventError) {
+      return NextResponse.json(
+        { error: "Төлбөрийн эзэмшигчийг шалгаж чадсангүй." },
+        { status: 503 },
+      );
+    }
+
+    if (event?.order_id) {
+      const { data: order, error: orderError } = await admin
+        .from("orders")
+        .select("id")
+        .eq("id", event.order_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (orderError) {
+        return NextResponse.json(
+          { error: "Төлбөрийн эзэмшигчийг шалгаж чадсангүй." },
+          { status: 503 },
+        );
+      }
+      authorized = Boolean(order);
+    }
+  }
+
+  if (!authorized) {
+    // Intent байгаа эсэхийг задруулахгүй.
+    return NextResponse.json(
+      { error: "Төлбөрийн хүсэлт олдсонгүй." },
+      { status: 404 },
     );
   }
 

@@ -2,11 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { SITE } from "@/constants/site";
-import { getCategories } from "@/lib/data";
+import { Category } from "@/types";
 import { AuthenticatedCartLink } from "./AuthenticatedCartLink";
 
-export async function Footer() {
-  const categories = await getCategories();
+export function Footer({ categories }: { categories: Category[] }) {
   return (
     <footer className="mt-24 border-t border-line bg-surface">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 lg:grid-cols-4 lg:px-8">

@@ -85,7 +85,7 @@ begin
       from public.products
      where id = v_product_id;
 
-    -- DB-д мөр байхгүй бол (зөвхөн кодын seed дотор байгаа бараа) нөөц хянах
+    -- DB-д мөр байхгүй барааг захиалах боломжгүй.
     -- боломжгүй тул алгасна. Бүх барааг DB-д оруулбал энэ салбар ажиллахаа болино.
     if v_title is null then
       raise exception 'Бараа олдсонгүй: %', v_product_id;

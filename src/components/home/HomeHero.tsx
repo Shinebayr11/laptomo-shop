@@ -3,12 +3,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Product } from "@/types";
 
-const HERO_PRODUCT_SLUG = "14-triple-portable-monitor";
-
 export function HomeHero({ products }: { products: Product[] }) {
-  const heroProduct =
-    products.find((product) => product.slug === HERO_PRODUCT_SLUG) ??
-    products.find((product) => product.images[0]);
+  const heroProduct = products.find((product) => product.images[0]);
 
   if (!heroProduct) return null;
 
@@ -28,19 +24,19 @@ export function HomeHero({ products }: { products: Product[] }) {
 
       <div className="relative z-10 mx-auto flex min-h-[620px] max-w-screen-2xl items-center px-5 py-16 lg:px-8 lg:py-24">
         <div className="max-w-xl rounded-3xl border border-stone-700/10 bg-[#d8d0c6]/65 p-6 shadow-2xl shadow-black/10 backdrop-blur-[3px] dark:border-transparent dark:bg-transparent dark:shadow-none dark:backdrop-blur-none sm:p-8 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none">
-          <p className="text-xs font-semibold uppercase tracking-wide2 text-sky-600 dark:text-sky-300">
+          <p className="text-xs font-semibold uppercase tracking-wide2 text-sky-700 dark:text-sky-300">
             LS Tech Store
           </p>
-          <h1 className="mt-4 font-display text-4xl font-bold leading-[0.98] tracking-tightest text-slate-500 dark:text-white sm:text-6xl sm:leading-[0.95] xl:text-7xl">
+          <h1 className="mt-4 font-display text-4xl font-bold leading-[0.98] tracking-tightest text-zinc-950 dark:text-white sm:text-6xl sm:leading-[0.95] xl:text-7xl">
             Танд хэрэгтэй технологи.
-            <span className="block text-sky-600 dark:text-sky-300">Яг энд байна.</span>
+            <span className="block text-blue-900 dark:text-sky-300">Яг энд байна.</span>
           </h1>
-          <p className="mt-6 max-w-xl text-base font-medium leading-7 text-slate-600 dark:text-white/90 sm:text-lg">
+          <p className="mt-6 max-w-xl text-base font-medium leading-7 text-zinc-800 dark:text-white/90 sm:text-lg">
             Laptop, monitor болон хэрэгслийг баталгаатай, хурдан хүргэлттэйгээр
             нэг дороос сонго.
           </p>
-          <p className="mt-4 text-sm font-medium text-sky-600 dark:text-sky-300">
-            {heroProduct.brand} · {heroProduct.title}
+          <p className="mt-4 text-sm font-medium text-sky-700 dark:text-sky-300">
+            {[heroProduct.brand, heroProduct.title].filter(Boolean).join(" · ")}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link

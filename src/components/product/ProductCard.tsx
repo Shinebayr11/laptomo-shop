@@ -55,8 +55,10 @@ export function ProductCard({ product }: { product: Product }) {
       </button>
 
       <div className="mt-4 flex flex-1 flex-col">
-        <span className="text-[11px] uppercase tracking-wide2 text-muted">{product.brand}</span>
-        <Link href={`/products/${product.slug}`} className="mt-1 line-clamp-2 font-display text-lg leading-snug text-ink hover:text-accent">
+        {product.brand && (
+          <span className="text-[11px] uppercase tracking-wide2 text-muted">{product.brand}</span>
+        )}
+        <Link href={`/products/${product.slug}`} className={cn("line-clamp-2 font-display text-lg leading-snug text-ink hover:text-accent", product.brand && "mt-1")}>
           {product.title}
         </Link>
         <div className="mt-1.5"><RatingStars rating={product.rating} /></div>

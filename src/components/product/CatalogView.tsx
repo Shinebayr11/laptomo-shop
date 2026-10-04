@@ -23,6 +23,13 @@ export function CatalogView({
   const update = (patch: Partial<ProductFilters>) => setFilters((f) => ({ ...f, ...patch }));
   const reset = () => setFilters(emptyFilters);
   const results = useMemo(() => filterProducts(products, filters), [products, filters]);
+  const brands = useMemo(
+    () =>
+      Array.from(
+        new Set(products.map((product) => product.brand.trim()).filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b)),
+    [products],
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
@@ -40,7 +47,7 @@ export function CatalogView({
       </div>
 
       <div className="grid gap-10 lg:grid-cols-[230px_1fr]">
-        <div className="hidden lg:block"><FilterSidebar categories={categories} filters={filters} update={update} reset={reset} /></div>
+        <div className="hidden lg:block"><FilterSidebar categories={categories} brands={brands} filters={filters} update={update} reset={reset} /></div>
         <div>
           {results.length ? <ProductGrid products={results} /> : (
             <EmptyState title="Бараа олдсонгүй" hint="Шүүлтүүрээ өөрчилж дахин оролдоно уу." actionLabel="Шүүлтүүр цэвэрлэх" actionHref="/products" />
@@ -56,7 +63,7 @@ export function CatalogView({
               <h2 className="font-display text-xl text-ink">Шүүлтүүр</h2>
               <button onClick={() => setOpenMobile(false)}><X size={20} /></button>
             </div>
-            <FilterSidebar categories={categories} filters={filters} update={update} reset={reset} />
+            <FilterSidebar categories={categories} brands={brands} filters={filters} update={update} reset={reset} />
           </div>
         </div>
       )}

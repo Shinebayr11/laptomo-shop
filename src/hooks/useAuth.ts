@@ -26,7 +26,12 @@ export function useAuth() {
    * үлдэж, redirect loop үүсгэдэг байсныг үүгээр таслана.
    */
   useEffect(() => {
-    if (!isSupabaseEnabled || !ready || sessionVerified) return;
+    if (!ready) return;
+    if (!isSupabaseEnabled) {
+      setUser(null);
+      return;
+    }
+    if (sessionVerified) return;
     sessionVerified = true;
 
     let active = true;
@@ -76,12 +81,7 @@ export function useAuth() {
       }
       return;
     }
-    setUser({
-      id: "demo",
-      email: cleanEmail,
-      name: cleanEmail.split("@")[0],
-      role: cleanEmail.startsWith("admin") ? "admin" : "customer",
-    });
+    throw new Error("Нэвтрэхийн тулд Supabase холболт тохируулна уу.");
   };
 
   const register = async (name: string, email: string, password: string) => {
@@ -122,13 +122,7 @@ export function useAuth() {
       }
       return { needsEmailConfirmation: true };
     }
-    setUser({
-      id: "demo",
-      email: cleanEmail,
-      name: cleanName,
-      role: "customer",
-    });
-    return { needsEmailConfirmation: false };
+    throw new Error("Бүртгэл үүсгэхийн тулд Supabase холболт тохируулна уу.");
   };
 
   const logout = async () => {

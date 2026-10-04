@@ -1,21 +1,17 @@
 "use client";
 import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
 import { createClient, isSupabaseEnabled } from "@/lib/supabase/client";
 
 type AccessState = "checking" | "allowed" | "denied";
 
 export function AdminGuard({ children }: { children: ReactNode }) {
-  const { user, ready, isAdmin } = useAuth();
   const router = useRouter();
   const [access, setAccess] = useState<AccessState>("checking");
 
   useEffect(() => {
-    // Supabase унтраалттай demo горимд localStorage дээрх role-оор ажиллана.
     if (!isSupabaseEnabled) {
-      if (!ready) return;
-      setAccess(user && isAdmin ? "allowed" : "denied");
+      setAccess("denied");
       return;
     }
 
@@ -52,7 +48,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [ready, user, isAdmin]);
+  }, []);
 
   useEffect(() => {
     if (access === "denied") router.replace("/login?next=/admin");

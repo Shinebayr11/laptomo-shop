@@ -5,14 +5,22 @@ import { useState } from "react";
 import { Menu, X, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NAV_LINKS, SITE } from "@/constants/site";
+import { Category } from "@/types";
 import { ThemeToggle } from "./ThemeToggle";
 import { CartIndicator } from "./CartIndicator";
 import { AccountMenu } from "./AccountMenu";
 
-export function Header() {
+export function Header({ categories }: { categories: Category[] }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const router = useRouter();
+  const links = [
+    ...NAV_LINKS,
+    ...categories.map((category) => ({
+      href: `/products?category=${category.slug}`,
+      label: category.name,
+    })),
+  ];
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +59,7 @@ export function Header() {
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-3 xl:flex 2xl:gap-4">
-          {NAV_LINKS.map((l) => (
+          {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -102,7 +110,7 @@ export function Header() {
             />
           </form>
           <nav className="flex flex-col divide-y divide-line">
-            {NAV_LINKS.map((l) => (
+            {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}

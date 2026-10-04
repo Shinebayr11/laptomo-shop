@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, Pencil, Plus } from "lucide-react";
 import { CategoryRow } from "@/types";
 import { useAdmin } from "@/store/AdminContext";
 import { CategoryForm } from "@/components/admin/CategoryForm";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function AdminCategoriesPage() {
-  const { categories, ready, saveCategory, deleteCategory, actionError, clearActionError } =
+  const { categories, ready, saveCategory, archiveCategories, actionError, clearActionError } =
     useAdmin();
   const [editing, setEditing] = useState<CategoryRow | null>(null);
   const [open, setOpen] = useState(false);
@@ -24,17 +24,16 @@ export default function AdminCategoriesPage() {
   const handleSave = async (c: CategoryRow) => {
     if (await saveCategory(c)) setOpen(false);
   };
-  const handleDelete = (c: CategoryRow) => {
+  const handleArchive = async (c: CategoryRow) => {
     const hasChildren = subsOf(c.slug).length > 0;
     const message = hasChildren
-      ? `"${c.name}"-г устгавал доторх дэд ангиллууд ч устна. Үргэлжлүүлэх үү?`
-      : `"${c.name}"-г устгах уу?`;
+      ? `"${c.name}" болон доторх дэд ангиллуудыг дэлгүүрээс нууж архивлах уу?`
+      : `"${c.name}"-г дэлгүүрээс нууж архивлах уу?`;
     if (!confirm(message)) return;
-    if (hasChildren) {
-      Promise.all([deleteCategory(c.id), ...subsOf(c.slug).map((s) => deleteCategory(s.id))]);
-    } else {
-      deleteCategory(c.id);
-    }
+    const ids = hasChildren
+      ? [c.id, ...subsOf(c.slug).map((subcategory) => subcategory.id)]
+      : [c.id];
+    await archiveCategories(ids);
   };
 
   return (
@@ -63,7 +62,7 @@ export default function AdminCategoriesPage() {
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button onClick={() => openEdit(p)} className="rounded-lg border border-line p-2 text-muted hover:text-accent" aria-label="Засах"><Pencil size={15} /></button>
-                  <button onClick={() => handleDelete(p)} className="rounded-lg border border-line p-2 text-muted hover:text-red-600" aria-label="Устгах"><Trash2 size={15} /></button>
+                  <button onClick={() => handleArchive(p)} className="rounded-lg border border-line p-2 text-muted hover:text-amber-600" aria-label="Архивлах"><Archive size={15} /></button>
                 </div>
               </div>
 
@@ -73,7 +72,7 @@ export default function AdminCategoriesPage() {
                     <li key={s.id} className="flex items-center gap-2 rounded-full border border-line py-1.5 pl-3 pr-1.5 text-xs text-ink">
                       {s.name}
                       <button onClick={() => openEdit(s)} className="rounded-full p-1 text-muted hover:text-accent" aria-label="Засах"><Pencil size={11} /></button>
-                      <button onClick={() => handleDelete(s)} className="rounded-full p-1 text-muted hover:text-red-600" aria-label="Устгах"><Trash2 size={11} /></button>
+                      <button onClick={() => handleArchive(s)} className="rounded-full p-1 text-muted hover:text-amber-600" aria-label="Архивлах"><Archive size={11} /></button>
                     </li>
                   ))}
                 </ul>

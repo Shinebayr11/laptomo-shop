@@ -20,18 +20,16 @@ export function ProductReviews({ productId, initial }: { productId: string; init
       created_at: new Date().toISOString(),
     };
 
-    if (isSupabaseEnabled) {
-      const { data, error } = await createClient()!
-        .from("reviews")
-        .insert(r)
-        .select("*")
-        .single();
-      if (error) throw new Error(error.message);
-      setReviews((prev) => [data as Review, ...prev]);
-      return;
+    if (!isSupabaseEnabled) {
+      throw new Error("Сэтгэгдэл үлдээхийн тулд Supabase холболт шаардлагатай.");
     }
-
-    setReviews((prev) => [r, ...prev]);
+    const { data, error } = await createClient()!
+      .from("reviews")
+      .insert(r)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    setReviews((prev) => [data as Review, ...prev]);
   };
 
   return (

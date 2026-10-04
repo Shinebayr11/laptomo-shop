@@ -61,9 +61,14 @@ export async function POST(request: NextRequest) {
 
   // Захиалгыг хэн өгснийг мэдэх ёстой — төлбөр төлөөд буцаж ирээгүй үед
   // webhook нь энэ хэрэглэгчийн нэрээр захиалгыг үүсгэнэ.
+  const authClient = createServerSupabase();
+  if (!authClient) {
+    return errorResponse("Нэвтрэлтийн server тохиргоо дутуу байна.", 503);
+  }
+
   const {
     data: { user },
-  } = await createServerSupabase()!.auth.getUser();
+  } = await authClient.auth.getUser();
   if (!user) {
     return errorResponse("Захиалга өгөхийн тулд нэвтэрнэ үү.", 401);
   }
@@ -123,7 +128,15 @@ export async function POST(request: NextRequest) {
     quantities.set(productId, (quantities.get(productId) ?? 0) + quantity);
   }
 
-  const products = await getProducts({ respectArchiveCookie: false });
+  let products: Awaited<ReturnType<typeof getProducts>>;
+  try {
+    products = await getProducts();
+  } catch {
+    return errorResponse(
+      "Барааны үнэ, үлдэгдлийг шалгаж чадсангүй. Түр хүлээгээд дахин оролдоно уу.",
+      503,
+    );
+  }
   const productMap = new Map(products.map((product) => [product.id, product]));
   let subtotal = 0;
 

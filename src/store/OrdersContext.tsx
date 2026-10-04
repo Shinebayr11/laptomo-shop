@@ -8,8 +8,6 @@ import {
   ReactNode,
 } from "react";
 import { Order, OrderItem, OrderStatus } from "@/types";
-import { SEED_ORDERS } from "@/data/orders";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { createClient, isSupabaseEnabled } from "@/lib/supabase/client";
 import {
   fetchOrders,
@@ -40,14 +38,19 @@ interface OrdersCtx {
 const Ctx = createContext<OrdersCtx | null>(null);
 const supa = isSupabaseEnabled;
 
+function createOrderId() {
+  return `ORD-${Date.now().toString(36).toUpperCase()}-${crypto
+    .randomUUID()
+    .slice(0, 12)
+    .toUpperCase()}`;
+}
+
 export function OrdersProvider({ children }: { children: ReactNode }) {
-  const [lsOrders, setLsOrders, lsReady] = useLocalStorage<Order[]>(
-    "laptomo_orders",
-    SEED_ORDERS,
+  const [dbOrders, setDbOrders] = useState<Order[]>([]);
+  const [dbReady, setDbReady] = useState(!supa);
+  const [error, setError] = useState<string | null>(
+    supa ? null : "Supabase холболт тохируулаагүй байна.",
   );
-  const [dbOrders, setDbOrders] = useState<Order[] | null>(null);
-  const [dbReady, setDbReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const refreshOrders = useCallback(async () => {
     if (!supa) return;
@@ -56,7 +59,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       setDbOrders(next ?? []);
       setError(null);
     } catch (loadError) {
-      setDbOrders(null);
+      setDbOrders([]);
       setError(
         loadError instanceof Error
           ? loadError.message
@@ -92,8 +95,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshOrders]);
 
-  const orders = supa ? (dbOrders ?? []) : lsOrders;
-  const ready = supa ? dbReady : lsReady;
+  const orders = dbOrders;
+  const ready = dbReady;
 
   const placeOrder = async (input: PlaceOrderInput) => {
     const { order_id, ...orderInput } = input;
@@ -104,59 +107,52 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
     const order: Order = {
       ...orderInput,
-      id: order_id ?? "ORD-" + Math.floor(1000 + Math.random() * 9000),
+      id: order_id ?? createOrderId(),
       status: "pending",
       created_at: new Date().toISOString(),
     };
-    if (supa) {
-      try {
-        // Нөөц хасалттай хамт бичигдэнэ. Буцаж ирсэн мөрийг ашиглана —
-        // ижил дугаартай захиалга аль хэдийн байвал түүнийг буцаадаг.
-        const saved = await placeOrderDb(order);
-        setDbOrders((prev) => {
-          const list = prev ?? [];
-          return list.some((o) => o.id === saved.id)
-            ? list.map((o) => (o.id === saved.id ? saved : o))
-            : [saved, ...list];
-        });
-        setError(null);
-        return saved;
-      } catch (saveError) {
-        const message =
-          saveError instanceof Error
-            ? saveError.message
-            : "Захиалгыг хадгалж чадсангүй.";
-        setError(message);
-        throw new Error(message);
-      }
+    if (!supa) {
+      throw new Error("Захиалга өгөхийн тулд Supabase холболт шаардлагатай.");
     }
-
-    setLsOrders((prev) => [order, ...prev]);
-    return order;
+    try {
+      // Нөөц хасалттай хамт бичигдэнэ. Буцаж ирсэн мөрийг ашиглана —
+      // ижил дугаартай захиалга аль хэдийн байвал түүнийг буцаадаг.
+      const saved = await placeOrderDb(order);
+      setDbOrders((prev) =>
+        prev.some((o) => o.id === saved.id)
+          ? prev.map((o) => (o.id === saved.id ? saved : o))
+          : [saved, ...prev],
+      );
+      setError(null);
+      return saved;
+    } catch (saveError) {
+      const message =
+        saveError instanceof Error
+          ? saveError.message
+          : "Захиалгыг хадгалж чадсангүй.";
+      setError(message);
+      throw new Error(message);
+    }
   };
 
   const setOrderStatus = async (id: string, status: OrderStatus) => {
-    if (supa) {
-      try {
-        await updateOrderStatusDb(id, status);
-        setDbOrders((prev) =>
-          (prev ?? []).map((o) => (o.id === id ? { ...o, status } : o)),
-        );
-        setError(null);
-        return;
-      } catch (updateError) {
-        const message =
-          updateError instanceof Error
-            ? updateError.message
-            : "Захиалгын төлөв шинэчилж чадсангүй.";
-        setError(message);
-        throw new Error(message);
-      }
+    if (!supa) {
+      throw new Error("Захиалгын төлөв өөрчлөхөд Supabase шаардлагатай.");
     }
-
-    setLsOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status } : o)),
-    );
+    try {
+      await updateOrderStatusDb(id, status);
+      setDbOrders((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, status } : o)),
+      );
+      setError(null);
+    } catch (updateError) {
+      const message =
+        updateError instanceof Error
+          ? updateError.message
+          : "Захиалгын төлөв шинэчилж чадсангүй.";
+      setError(message);
+      throw new Error(message);
+    }
   };
 
   const ordersForUser = (userId: string) =>

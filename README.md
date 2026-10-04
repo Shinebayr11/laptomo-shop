@@ -25,18 +25,14 @@ npm run dev
 ```
 Дараа нь хөтөч дээр `http://localhost:3000` нээнэ.
 
-> **Чухал:** Supabase тохируулаагүй байсан ч сайт **шууд ажиллана** — дотроо жишиг өгөгдөлтэй (16 бүтээгдэхүүн, захиалга, сэтгэгдэл). Сагс, хүслийн жагсаалт нь хөтчийн localStorage дээр хадгална.
-
-### Админ руу нэвтрэх (demo горим)
-Supabase тохируулаагүй үед: и-мэйл нь **`admin`** гэж эхэлсэн бол админ эрхээр нэвтэрнэ.
-- Жишээ: `admin@laptomo.mn` — нууц үг ямар ч байж болно.
-- Дараа нь `/admin` хаягаар хяналтын самбар нээгдэнэ.
+> **Чухал:** Бүтээгдэхүүн, ангилал, сэтгэгдэл, захиалга болон хэрэглэгчийн
+> бүртгэл бүгд Supabase-аас уншигдана. Код дотор demo/seed fallback байхгүй.
+> Сагс болон хүслийн жагсаалт л хэрэглэгчийн төхөөрөмж дээр хадгалагдана.
 
 ### Supabase холбох (production)
 1. [supabase.com](https://supabase.com) дээр төсөл үүсгэнэ.
 2. **SQL Editor** дотор `supabase/schema.sql`-г бүхэлд нь ажиллуулна (хүснэгт + RLS дүрэм).
-3. (Заавал биш) `supabase/seed.sql`-г ажиллуулж жишиг бараа оруулна.
-4. `.env.example`-г хуулж `.env.local` болгоод утгуудаа бөглөнө:
+3. `.env.example`-г хуулж `.env.local` болгоод утгуудаа бөглөнө:
    ```bash
    cp .env.example .env.local
    ```
@@ -45,21 +41,21 @@ Supabase тохируулаагүй үед: и-мэйл нь **`admin`** гэж 
    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
    WIRE_API_KEY=sk_live_...
    ```
-5. Эхний админ хэрэглэгчийг гараар тохируулна:
+4. Эхний админ хэрэглэгчийг гараар тохируулна:
    ```sql
    update public.profiles set role = 'admin' where email = 'таны@имэйл.mn';
    ```
+5. `/admin` хэсгээс бодит ангилал, бүтээгдэхүүнээ оруулна.
 6. Нөөцийн хяналтыг асаана (доорх **Нөөцийн хяналт** хэсгийг үзнэ үү).
 
-### Нөөцийн хяналт
-Supabase SQL Editor дотор дараах хоёр файлыг **энэ дарааллаар** нэг удаа ажиллуулна:
+Өмнө нь үүсгэсэн database дээр ангиллын archive нэмэх бол Supabase SQL
+Editor дотор `supabase/category-archive.sql`-г нэг удаа ажиллуулна. Шинэ database
+дээр `schema.sql` энэ талбарыг шууд үүсгэнэ.
 
-1. `supabase/sync-missing-products.sql` — кодын seed дотор байгаа ч DB-д
-   байхгүй бараануудыг оруулна. Нөөц хянагдахын тулд бараа бүр DB-д мөртэй
-   байх ёстой. `on conflict do nothing` учир одоо байгаа мөрүүд (архивласан
-   төлөв орно) огт хөндөгдөхгүй.
-2. `supabase/stock-tracking.sql` — `place_order` болон `set_order_status`
-   функцуудыг үүсгэнэ.
+### Нөөцийн хяналт
+Supabase SQL Editor дотор `supabase/stock-tracking.sql`-г нэг удаа ажиллуулж
+`place_order` болон `set_order_status` функцуудыг үүсгэнэ. Захиалж болох бараа
+бүрийг урьдчилан Admin самбараас бодитоор үүсгэсэн байх шаардлагатай.
 
 **Хэрхэн ажилладаг вэ**
 - Захиалга үүсэх үед нөөц нь **нэг transaction дотор** хасагдана. Нөөц
@@ -122,9 +118,10 @@ Webhook нь **заавал биш** — Wire өөрөө operator-оос төл�
 browser-ээ хаачихвал таны сайт мэдэхгүй үлддэг. Webhook нь тэр цоорхойг нөхнө.
 
 **1. SQL:** Шинэ төсөл дээр `supabase/stock/01-place-order.sql`-ээс
-`07-security-and-reliability-fixes.sql` хүртэл дарааллаар ажиллуулна.
-Өмнө нь 01–06 ажилласан төсөл дээр шинэ `07`-г, дараа нь шинэчлэгдсэн
-`05-pending-orders.sql`-г дахин ажиллуулна.
+`08-notification-delivery-state.sql` хүртэл дарааллаар ажиллуулна.
+Өмнө нь 01–07 ажилласан төсөл дээр шинэ `08`-г нэг удаа ажиллуулна.
+Харин хуучин 01–06 хувилбартай төсөл бол `07`, шинэчлэгдсэн `05`, дараа нь
+`08`-г ажиллуулна.
 
 **2. Environment хувьсагч** (`.env.local` + Vercel):
 ```
@@ -175,9 +172,15 @@ Webhook нь PaymentIntent үүсэх үед хадгалсан `pending_orders`
 захиалга алдагдахгүй.
 
 #### ⚠️ Нөөцийн SQL
-`supabase/stock/01…07`-г дарааллаар ажиллуулаагүй бол захиалга, webhook эсвэл
+`supabase/stock/01…08`-г дарааллаар ажиллуулаагүй бол захиалга, webhook эсвэл
 мэдэгдлийн хэсэг бүрэн ажиллахгүй
 (checkout дээр тодорхой мессеж гарна).
+
+### Newsletter
+Нүүр хуудасны newsletter бүртгэлийг хадгалахын тулд Supabase SQL Editor дээр
+`supabase/newsletter.sql`-г нэг удаа ажиллуулна. Имэйлүүд
+`public.newsletter_subscribers` хүснэгтэд хадгалагдана; public RLS policy байхгүй
+тул зөвхөн server-side API бичих боломжтой.
 
 ### Deploy хийх (Vercel + .mn домэйн)
 1. Кодоо GitHub руу push хийнэ.
@@ -196,13 +199,14 @@ A premium, production-ready e-commerce store (laptops & tech accessories) locali
 npm install
 npm run dev   # http://localhost:3000
 ```
-The app runs **immediately without any database** using built-in seed data. Cart & wishlist persist via `localStorage`.
-
-### Admin access (demo mode)
-With no Supabase configured, any email starting with `admin` (e.g. `admin@laptomo.mn`) logs in as admin → visit `/admin`.
+Products, categories, reviews, orders, and users come only from Supabase. There
+is no built-in demo or seed fallback. Cart and wishlist state remain local to
+the shopper's browser.
 
 ### Connecting Supabase
-Run `supabase/schema.sql` in the Supabase SQL Editor (creates tables + RLS), copy `.env.example` → `.env.local`, fill in your keys, then promote a user to admin via SQL.
+Run `supabase/schema.sql` in the Supabase SQL Editor (creates tables + RLS),
+copy `.env.example` → `.env.local`, fill in your keys, promote a user to admin
+via SQL, then create the real catalog through `/admin`.
 
 ### Deploy
 Push to GitHub → import on Vercel → add env vars → deploy → attach your custom `.mn` domain.
@@ -219,15 +223,13 @@ src/
 ├── components/         # Дахин ашиглагдах компонентууд
 │   ├── admin/  cart/  filters/  home/  layout/  product/  providers/  ui/
 ├── constants/          # categories, site тохиргоо
-├── data/               # Жишиг өгөгдөл (products, orders, reviews)
 ├── hooks/              # useAuth, useLocalStorage
 ├── lib/                # Supabase client/server, өгөгдлийн давхарга
 ├── store/              # Cart, Wishlist, Admin контекст
 ├── types/              # TypeScript төрлүүд
 └── utils/              # format, filter туслахууд
 supabase/
-├── schema.sql          # Хүснэгт + RLS дүрэм
-└── seed.sql            # Жишиг өгөгдөл
+└── schema.sql          # Хүснэгт + RLS дүрэм
 ```
 
 ### Tech stack

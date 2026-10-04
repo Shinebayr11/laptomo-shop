@@ -33,7 +33,9 @@
 Захиалга үүсэхэд худалдан авагчид баталгаа, танд мэдэгдэл имэйлээр очно.
 `orders` хүснэгт дээрх Supabase Database Webhook → `/api/notify/order`.
 
-- [x] `supabase/stock/06-order-notify.sql` — `notified_at` багана үүссэн
+- [x] `supabase/stock/06-order-notify.sql` — мэдэгдлийн баганууд үүссэн
+- [ ] `supabase/stock/08-notification-delivery-state.sql` — production DB дээр
+      ажиллуулж recipient бүрийн давхар имэйлээс хамгаалах
 - [x] Vercel env: `RESEND_API_KEY`, `ADMIN_NOTIFY_EMAIL`, `ORDER_NOTIFY_SECRET`
 - [x] Redeploy
 - [x] Database Webhooks integration суулгасан (`pg_net`)

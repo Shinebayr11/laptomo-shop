@@ -21,7 +21,9 @@ export function CartItem({ line }: { line: CartLine }) {
           <Link href={`/products/${product.slug}`} className="font-display text-base text-ink hover:text-accent">{product.title}</Link>
           <button onClick={() => remove(product.id)} className="text-muted hover:text-red-500"><X size={16} /></button>
         </div>
-        <span className="text-xs uppercase tracking-wide2 text-muted">{product.brand}</span>
+        {product.brand && (
+          <span className="text-xs uppercase tracking-wide2 text-muted">{product.brand}</span>
+        )}
         <div className="mt-auto flex items-center justify-between">
           <div className="flex items-center rounded-full border border-line">
             <button onClick={() => setQty(product.id, quantity - 1)} className="grid h-8 w-8 place-items-center hover:text-accent"><Minus size={13} /></button>

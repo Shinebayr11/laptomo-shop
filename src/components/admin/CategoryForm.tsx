@@ -15,6 +15,7 @@ const blank = (): CategoryRow => ({
   description: "",
   image: "",
   parent_slug: null,
+  is_archived: false,
   created_at: new Date().toISOString(),
 });
 

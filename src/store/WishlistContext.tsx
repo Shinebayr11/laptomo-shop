@@ -16,7 +16,13 @@ const Ctx = createContext<WishlistCtx | null>(null);
 const EMPTY_WISHLIST: string[] = [];
 const GUEST_WISHLIST_KEY = "laptomo_wishlist_guest";
 
-export function WishlistProvider({ children }: { children: ReactNode }) {
+export function WishlistProvider({
+  children,
+  productIds,
+}: {
+  children: ReactNode;
+  productIds: string[];
+}) {
   const { user, ready: authReady } = useAuth();
   const wishlistKey = user
     ? `laptomo_wishlist_user_${user.id}`
@@ -31,6 +37,12 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     migrateLegacyKey("laptomo_wishlist", GUEST_WISHLIST_KEY);
   }, []);
+
+  useEffect(() => {
+    if (!wishlistReady) return;
+    const availableIds = new Set(productIds);
+    setIds((previous) => previous.filter((id) => availableIds.has(id)));
+  }, [productIds, setIds, wishlistReady]);
 
   const has = (id: string) => ids.includes(id);
   const toggle = (id: string) =>

@@ -56,8 +56,7 @@ export async function uploadProductImage(
 }
 
 /**
- * Архивлах/сэргээх үйлдлүүд DB-д байхгүй seed бараанд ч дуудагдаж болох тул
- * алдаа шидэхийн оронд бодитоор өөрчлөгдсөн мөрийн тоог буцаана.
+ * Архивлах/сэргээх үед бодитоор өөрчлөгдсөн мөрийн тоог буцаана.
  * Дуудагч тал нь энэ тоог хүлээгдэж буй тоотой харьцуулж шийднэ.
  */
 export async function setProductsArchivedDb(
@@ -192,13 +191,17 @@ export async function upsertCategory(c: CategoryRow): Promise<void> {
   assertWritten(data, 1);
 }
 
-export async function deleteCategoryDb(id: string): Promise<void> {
+export async function setCategoriesArchivedDb(
+  ids: string[],
+  archived: boolean,
+): Promise<number> {
+  if (!ids.length) return 0;
   const sb = createClient();
   const { data, error } = await sb!
     .from("categories")
-    .delete()
-    .eq("id", id)
+    .update({ is_archived: archived })
+    .in("id", ids)
     .select("id");
   if (error) throw error;
-  assertWritten(data, 1);
+  return data?.length ?? 0;
 }

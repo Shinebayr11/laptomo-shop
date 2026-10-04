@@ -1,90 +1,75 @@
-import { Category, CategoryRow, Product, Review, Order } from "@/types";
-import { SEED_PRODUCTS } from "@/data/products";
-import { SEED_REVIEWS } from "@/data/reviews";
-import { SEED_ORDERS } from "@/data/orders";
-import { CATEGORIES } from "@/constants/categories";
+import { Category, CategoryRow, Product, Review } from "@/types";
 import { nestCategories } from "./categories";
 import {
-  applyArchiveOverrides,
-  visibleProducts,
-} from "./archive-overrides";
-import { getArchiveOverridesFromCookie } from "./archive-overrides-server";
-import {
-  createServerSupabase,
   createStaticSupabase,
   isSupabaseEnabled,
 } from "./supabase/server";
 
-type GetProductsOptions = {
-  respectArchiveCookie?: boolean;
-};
+export async function getProducts(): Promise<Product[]> {
+  if (!isSupabaseEnabled) return [];
+  const sb = createStaticSupabase();
+  const [productsResult, categoriesResult] = await Promise.all([
+    sb!
+      .from("products")
+      .select("*")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false }),
+    sb!.from("categories").select("*"),
+  ]);
+  if (productsResult.error) throw new Error(productsResult.error.message);
+  if (categoriesResult.error) throw new Error(categoriesResult.error.message);
 
-function publicVisibleProducts(
-  products: Product[],
-  options: GetProductsOptions,
-): Product[] {
-  const respectArchiveCookie = options.respectArchiveCookie ?? true;
+  const activeCategories = (categoriesResult.data ?? []) as CategoryRow[];
+  const activeParentSlugs = new Set(
+    activeCategories
+      .filter((category) => !category.parent_slug && !category.is_archived)
+      .map((category) => category.slug),
+  );
+  const activeSubcategorySlugs = new Set(
+    activeCategories
+      .filter((category) => category.parent_slug && !category.is_archived)
+      .map((category) => category.slug),
+  );
 
-  if (!respectArchiveCookie) return visibleProducts(products);
-
-  return visibleProducts(
-    applyArchiveOverrides(products, getArchiveOverridesFromCookie()),
+  return ((productsResult.data ?? []) as Product[]).filter(
+    (product) =>
+      activeParentSlugs.has(product.category) &&
+      activeSubcategorySlugs.has(product.subcategory),
   );
 }
 
-export async function getProducts(
-  options: GetProductsOptions = {},
-): Promise<Product[]> {
-  if (!isSupabaseEnabled) return publicVisibleProducts(SEED_PRODUCTS, options);
+function normalizeProductKey(value: string): string {
   try {
-    // Archive cookie хэрэггүй үед cookie-гүй client ашиглана — ингэснээр
-    // request context байхгүй build үед ч DB-ээс жинхэнэ дата уншина.
-    const sb =
-      options.respectArchiveCookie === false
-        ? createStaticSupabase()
-        : createServerSupabase();
-    const { data, error } = await sb!.from("products").select("*").order("created_at", { ascending: false });
-    // Зөвхөн ХОЛБОЛТ амжилтгүй үед seed рүү шилжинэ. Хоосон каталогийг
-    // seed-ээр дүүргэвэл админы устгасан бараа дэлгүүрт эргэж гарна.
-    if (error) return publicVisibleProducts(SEED_PRODUCTS, options);
-
-    // DB бол цорын ганц эх сурвалж. Өмнө нь SEED_PRODUCTS-тэй нийлүүлдэг
-    // байсан тул DB-ээс бараа устгахад кодын seed хувилбар нь орлож,
-    // устгасан бараа дэлгүүрт эргэж гарч ирдэг байв.
-    return publicVisibleProducts((data ?? []) as Product[], options);
+    return decodeURIComponent(value).normalize("NFC");
   } catch {
-    return publicVisibleProducts(SEED_PRODUCTS, options);
+    return value.normalize("NFC");
   }
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const products = await getProducts();
-  return products.find((p) => p.slug === slug || p.id === slug) ?? null;
+  const key = normalizeProductKey(slug);
+  return (
+    products.find(
+      (product) =>
+        normalizeProductKey(product.slug) === key ||
+        normalizeProductKey(product.id) === key,
+    ) ?? null
+  );
 }
 
 export async function getReviews(productId?: string): Promise<Review[]> {
-  let list = SEED_REVIEWS;
-  if (isSupabaseEnabled) {
-    try {
-      const sb = createServerSupabase();
-      const { data, error } = await sb!.from("reviews").select("*").order("created_at", { ascending: false });
-      if (!error) list = (data ?? []) as Review[];
-    } catch {
-      /* seed руу шилжинэ */
-    }
-  }
+  if (!isSupabaseEnabled) return [];
+  const sb = createStaticSupabase();
+  let query = sb!
+    .from("reviews")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (productId) query = query.eq("product_id", productId);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  const list = (data ?? []) as Review[];
   return productId ? list.filter((r) => r.product_id === productId) : list;
-}
-
-export async function getOrders(): Promise<Order[]> {
-  if (!isSupabaseEnabled) return SEED_ORDERS;
-  try {
-    const sb = createServerSupabase();
-    const { data } = await sb!.from("orders").select("*").order("created_at", { ascending: false });
-    return (data as Order[]) ?? SEED_ORDERS;
-  } catch {
-    return SEED_ORDERS;
-  }
 }
 
 export async function getRelatedProducts(product: Product, limit = 4): Promise<Product[]> {
@@ -100,16 +85,14 @@ export async function getRelatedProducts(product: Product, limit = 4): Promise<P
  * үед ч дуудаж болно.
  */
 export async function getCategories(): Promise<Category[]> {
-  if (!isSupabaseEnabled) return CATEGORIES;
-  try {
-    const sb = createStaticSupabase();
-    const { data, error } = await sb!
-      .from("categories")
-      .select("*")
-      .order("created_at", { ascending: true });
-    if (error || !data?.length) return CATEGORIES;
-    return nestCategories(data as CategoryRow[]);
-  } catch {
-    return CATEGORIES;
-  }
+  if (!isSupabaseEnabled) return [];
+  const sb = createStaticSupabase();
+  const { data, error } = await sb!
+    .from("categories")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return nestCategories(
+    ((data ?? []) as CategoryRow[]).filter((category) => !category.is_archived),
+  );
 }

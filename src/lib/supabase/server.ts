@@ -8,8 +8,8 @@ export const isSupabaseEnabled = Boolean(url && anon);
 
 /**
  * Cookie ашиглахгүй client — build/generateStaticParams зэрэг request context
- * байхгүй үед хэрэглэнэ. cookies() дуудвал тэнд алдаа гарч, DB-ийн оронд seed
- * дата руу чимээгүй унадаг байсныг үүгээр зассан.
+ * байхгүй үед хэрэглэнэ. Public каталогийн өгөгдөл RLS-ийн public read
+ * policy-оор уншигддаг тул хэрэглэгчийн cookie шаардлагагүй.
  */
 export function createStaticSupabase() {
   if (!isSupabaseEnabled) return null;

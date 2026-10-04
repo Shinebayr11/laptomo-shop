@@ -38,7 +38,10 @@ create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
   name text not null,
+  description text not null default '',
+  image text not null default '',
   parent_slug text,
+  is_archived boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -52,7 +55,7 @@ create table if not exists public.products (
   images jsonb not null default '[]'::jsonb,
   category text not null,
   subcategory text not null,
-  brand text not null,
+  brand text not null default '',
   description text not null default '',
   specifications jsonb not null default '[]'::jsonb,
   stock int not null default 0 check (stock >= 0),
@@ -75,6 +78,10 @@ create table if not exists public.orders (
   items jsonb not null default '[]'::jsonb,
   total_price numeric not null check (total_price >= 0),
   status order_status not null default 'pending',
+  notified_at timestamptz,
+  notification_claimed_at timestamptz,
+  customer_notified_at timestamptz,
+  admin_notified_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -87,6 +94,12 @@ create table if not exists public.reviews (
   rating int not null check (rating between 1 and 5),
   comment text not null default '',
   images jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- ---------- NEWSLETTER ----------
+create table if not exists public.newsletter_subscribers (
+  email text primary key check (length(email) between 3 and 254),
   created_at timestamptz not null default now()
 );
 
@@ -117,6 +130,7 @@ alter table public.categories enable row level security;
 alter table public.products   enable row level security;
 alter table public.orders     enable row level security;
 alter table public.reviews    enable row level security;
+alter table public.newsletter_subscribers enable row level security;
 
 -- PROFILES: хэрэглэгч өөрийнхөө мэдээллийг харна, админ бүгдийг
 create policy "profiles_select_own" on public.profiles for select using (auth.uid() = id or public.is_admin());

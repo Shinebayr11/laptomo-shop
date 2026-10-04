@@ -2,17 +2,17 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { getProductBySlug, getProducts, getRelatedProducts, getReviews, getCategories } from "@/lib/data";
+import { getProductBySlug, getRelatedProducts, getReviews, getCategories } from "@/lib/data";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
 import { ProductSpecs } from "@/components/product/ProductSpecs";
 import { ProductReviews } from "@/components/product/ProductReviews";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 
-export async function generateStaticParams() {
-  const products = await getProducts({ respectArchiveCookie: false });
-  return products.map((p) => ({ slug: p.slug }));
-}
+// Үнэ, нөөц, архив болон сэтгэгдэл admin-аас өөрчлөгдсөн даруйд харагдана.
+// Static generation нь эдгээр утгыг дараагийн deploy хүртэл хуучнаар нь хадгалж
+// байсан тул бүтээгдэхүүний дэлгэрэнгүйг request бүр дээр шинэчилнэ.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const product = await getProductBySlug(params.slug);

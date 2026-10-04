@@ -1,8 +1,7 @@
 "use client";
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { Loader2, Upload, X } from "lucide-react";
 import { Product } from "@/types";
-import { BRANDS } from "@/constants/site";
 import { uploadProductImage } from "@/lib/admin-data";
 import { nestCategories } from "@/lib/categories";
 import { useAdmin } from "@/store/AdminContext";
@@ -14,22 +13,45 @@ import { SpecEditor } from "./SpecEditor";
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9\u0400-\u04FF]+/g, "-").replace(/^-+|-+$/g, "");
 
-const blank = (): Product => ({
+const blank = (categories: ReturnType<typeof nestCategories>): Product => ({
   id: "p-" + Date.now(), title: "", slug: "", price: 0, discount_price: null, images: [],
-  category: "laptop", subcategory: "macbook", brand: "Apple", description: "", specifications: [],
+  category: categories[0]?.slug ?? "", subcategory: categories[0]?.subcategories[0]?.slug ?? "", brand: "", description: "", specifications: [],
   stock: 0, rating: 0, reviews_count: 0, is_featured: false, is_new: true, is_bestseller: false,
   is_archived: false, created_at: new Date().toISOString(),
 });
 
 export function ProductForm({ initial, onSave, onClose }: { initial?: Product; onSave: (p: Product) => void; onClose: () => void }) {
-  const { categories: categoryRows } = useAdmin();
-  const categories = nestCategories(categoryRows);
-  const [p, setP] = useState<Product>(initial ?? blank());
+  const {
+    categories: categoryRows,
+    archivedCategories,
+    products,
+    archivedProducts,
+  } = useAdmin();
+  const currentArchivedRows = initial
+    ? archivedCategories.filter(
+        (category) =>
+          category.slug === initial.category ||
+          category.slug === initial.subcategory,
+      )
+    : [];
+  const categories = nestCategories([...categoryRows, ...currentArchivedRows]);
+  const [p, setP] = useState<Product>(() => initial ?? blank(categories));
   const set = <K extends keyof Product>(k: K, v: Product[K]) => setP((prev) => ({ ...prev, [k]: v }));
   const subs = categories.find((c) => c.slug === p.category)?.subcategories ?? [];
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const brandOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [...products, ...archivedProducts]
+            .map((product) => product.brand.trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [products, archivedProducts],
+  );
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || !files.length) return;
@@ -57,7 +79,14 @@ export function ProductForm({ initial, onSave, onClose }: { initial?: Product; o
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const slug = p.slug || slugify(p.title);
-    onSave({ ...p, slug, subcategory: subs.some((s) => s.slug === p.subcategory) ? p.subcategory : subs[0]?.slug });
+    onSave({
+      ...p,
+      slug,
+      brand: p.brand.trim(),
+      subcategory: subs.some((s) => s.slug === p.subcategory)
+        ? p.subcategory
+        : (subs[0]?.slug ?? ""),
+    });
   };
 
   return (
@@ -80,7 +109,20 @@ export function ProductForm({ initial, onSave, onClose }: { initial?: Product; o
 
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Ангилал">
-              <Select value={p.category} onChange={(e) => set("category", e.target.value)}>
+              <Select
+                value={p.category}
+                onChange={(e) => {
+                  const category = e.target.value;
+                  const firstSubcategory =
+                    categories.find((item) => item.slug === category)
+                      ?.subcategories[0]?.slug ?? "";
+                  setP((prev) => ({
+                    ...prev,
+                    category,
+                    subcategory: firstSubcategory,
+                  }));
+                }}
+              >
                 {categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
               </Select>
             </Field>
@@ -89,10 +131,21 @@ export function ProductForm({ initial, onSave, onClose }: { initial?: Product; o
                 {subs.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </Select>
             </Field>
-            <Field label="Брэнд">
-              <Select value={p.brand} onChange={(e) => set("brand", e.target.value)}>
-                {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
-              </Select>
+            <Field label="Брэнд (заавал биш)">
+              <TextInput
+                list="admin-brand-options"
+                value={p.brand}
+                onChange={(e) => set("brand", e.target.value)}
+                placeholder="Брэндгүй үлдээж болно"
+              />
+              <datalist id="admin-brand-options">
+                {brandOptions.map((brand) => (
+                  <option key={brand} value={brand} />
+                ))}
+              </datalist>
+              <span className="block text-[11px] normal-case tracking-normal text-muted">
+                Байгаа брэндээс сонгох эсвэл шинэ брэндийн нэрийг шууд бичнэ үү.
+              </span>
             </Field>
           </div>
 

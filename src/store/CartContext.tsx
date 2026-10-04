@@ -20,7 +20,13 @@ interface CartCtx {
 const Ctx = createContext<CartCtx | null>(null);
 const EMPTY_CART: CartLine[] = [];
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({
+  children,
+  products,
+}: {
+  children: ReactNode;
+  products: Product[];
+}) {
   const { user, ready: authReady } = useAuth();
   const cartKey = user
     ? `laptomo_cart_user_${user.id}`
@@ -31,10 +37,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
   const ready = authReady && cartReady;
   const lines = ready ? storedLines : EMPTY_CART;
+  const availableById = useMemo(
+    () => new Map(products.map((product) => [product.id, product])),
+    [products],
+  );
 
   useEffect(() => {
     dropLegacyKey("laptomo_cart");
   }, []);
+
+  useEffect(() => {
+    if (!cartReady) return;
+    setLines((previous) =>
+      previous.flatMap((line) => {
+        const current = availableById.get(line.product.id);
+        return current ? [{ ...line, product: current }] : [];
+      }),
+    );
+  }, [availableById, cartReady, setLines]);
 
   const add = (product: Product, qty = 1) =>
     setLines((prev) => {

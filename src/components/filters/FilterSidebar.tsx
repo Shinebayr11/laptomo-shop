@@ -1,16 +1,16 @@
 "use client";
-import { BRANDS } from "@/constants/site";
 import { Category, ProductFilters } from "@/types";
 import { cn } from "@/utils/format";
 
 interface Props {
   categories: Category[];
+  brands: string[];
   filters: ProductFilters;
   update: (patch: Partial<ProductFilters>) => void;
   reset: () => void;
 }
 
-export function FilterSidebar({ categories, filters, update, reset }: Props) {
+export function FilterSidebar({ categories, brands, filters, update, reset }: Props) {
   const active = categories.find((c) => c.slug === filters.category);
   return (
     <aside className="space-y-8">
@@ -46,7 +46,7 @@ export function FilterSidebar({ categories, filters, update, reset }: Props) {
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide2 text-ink">Брэнд</h3>
         <select value={filters.brand} onChange={(e) => update({ brand: e.target.value })} className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-accent">
           <option value="">Бүх брэнд</option>
-          {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
+          {brands.map((b) => <option key={b} value={b}>{b}</option>)}
         </select>
       </div>
 

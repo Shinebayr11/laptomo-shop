@@ -23,9 +23,10 @@ export function ProductTable({
   onEdit: (p: Product) => void;
   onArchive: (p: Product) => void;
 }) {
-  const { categories } = useAdmin();
+  const { categories, archivedCategories } = useAdmin();
   const categoryName = (slug: string) =>
-    categories.find((c) => c.slug === slug)?.name ?? slug;
+    [...categories, ...archivedCategories].find((c) => c.slug === slug)?.name ??
+    slug;
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-line">

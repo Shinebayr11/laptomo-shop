@@ -22,14 +22,7 @@ export const LOW_STOCK_THRESHOLD = 5;
 export const NAV_LINKS = [
   { href: "/", label: "Нүүр" },
   { href: "/products", label: "Бүх бүтээгдэхүүн" },
-  { href: "/products?category=triple", label: "Гурвалсан" },
-  { href: "/products?category=dual", label: "Хос" },
-  { href: "/products?category=single", label: "Зөөврийн монитор" },
-  { href: "/products?category=accessory", label: "Дагалдах хэрэгсэл" },
-  { href: "/products?category=phone", label: "Утасны хэрэгсэл" },
 ];
-
-export const BRANDS = ["Apple", "ASUS", "Dell", "Lenovo", "Samsung", "Logitech", "Baseus", "Anker", "Xiaomi", "HP"];
 
 export const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: "newest", label: "Шинэ нь" },

@@ -80,12 +80,16 @@ export async function POST(request: NextRequest) {
 
   const order = claimed as Order;
 
-  if (!isEmailConfigured()) {
+  const releaseClaim = async () => {
     await supabase
       .from("orders")
       .update({ notification_claimed_at: null })
       .eq("id", orderId)
       .eq("notification_claimed_at", claimedAt);
+  };
+
+  if (!isEmailConfigured()) {
+    await releaseClaim();
     return NextResponse.json(
       { error: "RESEND_API_KEY тохируулаагүй байна." },
       { status: 503 },
@@ -103,7 +107,9 @@ export async function POST(request: NextRequest) {
     process.env.ADMIN_NOTIFY_EMAIL?.trim() || "adminlaptomo@gmail.com";
   const results: Record<string, string> = {};
 
-  if (customerEmail) {
+  if (order.customer_notified_at) {
+    results.customer = "already_sent";
+  } else if (customerEmail) {
     const mail = customerOrderEmail(order);
     const sent = await sendEmail({
       to: customerEmail,
@@ -112,25 +118,59 @@ export async function POST(request: NextRequest) {
       replyTo: adminEmail,
     });
     results.customer = sent.ok ? "sent" : sent.error;
+    if (sent.ok) {
+      const { error: markCustomerError } = await supabase
+        .from("orders")
+        .update({ customer_notified_at: new Date().toISOString() })
+        .eq("id", orderId)
+        .eq("notification_claimed_at", claimedAt);
+      if (markCustomerError) {
+        await releaseClaim();
+        return NextResponse.json(
+          { error: `Хэрэглэгчийн мэдэгдлийн төлөв хадгалж чадсангүй: ${markCustomerError.message}` },
+          { status: 500 },
+        );
+      }
+    }
   } else {
     results.customer = "имэйл олдсонгүй";
   }
 
-  const adminMail = adminOrderEmail(order);
-  const sentAdmin = await sendEmail({
-    to: adminEmail,
-    subject: adminMail.subject,
-    html: adminMail.html,
-  });
-  results.admin = sentAdmin.ok ? "sent" : sentAdmin.error;
+  let adminSent = Boolean(order.admin_notified_at);
+  if (adminSent) {
+    results.admin = "already_sent";
+  } else {
+    const adminMail = adminOrderEmail(order);
+    const sentAdmin = await sendEmail({
+      to: adminEmail,
+      subject: adminMail.subject,
+      html: adminMail.html,
+    });
+    adminSent = sentAdmin.ok;
+    results.admin = sentAdmin.ok ? "sent" : sentAdmin.error;
+    if (sentAdmin.ok) {
+      const { error: markAdminError } = await supabase
+        .from("orders")
+        .update({ admin_notified_at: new Date().toISOString() })
+        .eq("id", orderId)
+        .eq("notification_claimed_at", claimedAt);
+      if (markAdminError) {
+        await releaseClaim();
+        return NextResponse.json(
+          { error: `Админы мэдэгдлийн төлөв хадгалж чадсангүй: ${markAdminError.message}` },
+          { status: 500 },
+        );
+      }
+    }
+  }
 
-  const allSent = (!customerEmail || results.customer === "sent") && sentAdmin.ok;
+  const customerSent =
+    !customerEmail ||
+    Boolean(order.customer_notified_at) ||
+    results.customer === "sent";
+  const allSent = customerSent && adminSent;
   if (!allSent) {
-    await supabase
-      .from("orders")
-      .update({ notification_claimed_at: null })
-      .eq("id", orderId)
-      .eq("notification_claimed_at", claimedAt);
+    await releaseClaim();
     return NextResponse.json(
       { order_id: orderId, ...results },
       { status: 503 },

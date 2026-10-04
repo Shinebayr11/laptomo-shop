@@ -15,7 +15,14 @@ import { LOW_STOCK_THRESHOLD } from "@/constants/site";
 import { formatMNT, formatDate } from "@/utils/format";
 
 export default function AdminDashboardPage() {
-  const { products, archivedProducts, orders, reviews, ready } = useAdmin();
+  const {
+    products,
+    archivedProducts,
+    archivedCategories,
+    orders,
+    reviews,
+    ready,
+  } = useAdmin();
   if (!ready) return <p className="text-sm text-muted">Ачааллаж байна...</p>;
 
   const totalSales = orders
@@ -40,7 +47,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
         <StatCard label="Бүтээгдэхүүн" value={String(products.length)} icon={Package} hint="Идэвхтэй нэр төрөл" />
         <Link href="/admin/archive" className="block h-full">
-          <StatCard label="Архив" value={String(archivedProducts.length)} icon={Archive} hint="Нуусан бараа" />
+          <StatCard label="Архив" value={String(archivedProducts.length + archivedCategories.length)} icon={Archive} hint="Бараа ба ангилал" />
         </Link>
         <Link href="/admin/products" className="block h-full">
           <StatCard

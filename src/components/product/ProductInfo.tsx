@@ -42,8 +42,12 @@ export function ProductInfo({ product, categories }: { product: Product; categor
   return (
     <div>
       <div className="flex items-center gap-3 text-xs uppercase tracking-wide2 text-muted">
-        <span>{product.brand}</span>
-        <span>·</span>
+        {product.brand && (
+          <>
+            <span>{product.brand}</span>
+            <span>·</span>
+          </>
+        )}
         <span>{cat?.name}</span>
       </div>
       <h1 className="mt-3 font-display text-4xl font-bold tracking-tightest text-ink">

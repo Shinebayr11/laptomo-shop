@@ -7,25 +7,53 @@ import { AdminError } from "@/components/admin/AdminError";
 import { TextInput } from "@/components/admin/AdminField";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { effectivePrice, formatDate, formatMNT } from "@/utils/format";
-import { Product } from "@/types";
+import { CategoryRow, Product } from "@/types";
 
 export default function AdminArchivePage() {
-  const { archivedProducts, categories, ready, restoreProduct, actionError, clearActionError } =
-    useAdmin();
+  const {
+    archivedProducts,
+    categories,
+    archivedCategories,
+    ready,
+    restoreProduct,
+    restoreCategories,
+    actionError,
+    clearActionError,
+  } = useAdmin();
   const [q, setQ] = useState("");
 
   if (!ready) return <p className="text-sm text-muted">Ачааллаж байна...</p>;
 
   const categoryName = (slug: string) =>
-    categories.find((c) => c.slug === slug)?.name ?? slug;
+    [...categories, ...archivedCategories].find((c) => c.slug === slug)?.name ??
+    slug;
 
-  const filtered = archivedProducts.filter((p) =>
+  const normalizedQuery = q.trim().toLowerCase();
+  const filteredProducts = archivedProducts.filter((p) =>
     p.title.toLowerCase().includes(q.toLowerCase()),
+  );
+  const filteredCategories = archivedCategories.filter((category) =>
+    category.name.toLowerCase().includes(normalizedQuery),
   );
 
   const handleRestore = (p: Product) => {
     if (confirm(`"${p.title}"-г буцааж идэвхтэй болгох уу?`)) {
       restoreProduct(p.id);
+    }
+  };
+
+  const handleRestoreCategory = (category: CategoryRow) => {
+    const childIds = archivedCategories
+      .filter((item) => item.parent_slug === category.slug)
+      .map((item) => item.id);
+    const parent = category.parent_slug
+      ? archivedCategories.find((item) => item.slug === category.parent_slug)
+      : undefined;
+    const ids = Array.from(
+      new Set([category.id, ...childIds, ...(parent ? [parent.id] : [])]),
+    );
+    if (confirm(`"${category.name}"-г буцааж идэвхтэй болгох уу?`)) {
+      restoreCategories(ids);
     }
   };
 
@@ -35,7 +63,7 @@ export default function AdminArchivePage() {
         <div>
           <h1 className="font-display text-3xl font-semibold text-ink">Архив</h1>
           <p className="mt-1 text-sm text-muted">
-            Нийт {archivedProducts.length} нуусан бүтээгдэхүүн
+            {archivedProducts.length} бүтээгдэхүүн · {archivedCategories.length} ангилал
           </p>
         </div>
       </header>
@@ -52,8 +80,10 @@ export default function AdminArchivePage() {
         />
       </div>
 
-      {filtered.length ? (
-        <div className="overflow-x-auto rounded-2xl border border-line">
+      {filteredProducts.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-ink">Бүтээгдэхүүн</h2>
+          <div className="overflow-x-auto rounded-2xl border border-line">
           <table className="w-full min-w-[760px] text-sm">
             <thead className="border-b border-line bg-surface/40 text-left text-xs uppercase tracking-wide2 text-muted">
               <tr>
@@ -66,7 +96,7 @@ export default function AdminArchivePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {filtered.map((p) => (
+              {filteredProducts.map((p) => (
                 <tr key={p.id} className="hover:bg-surface/30">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -110,11 +140,61 @@ export default function AdminArchivePage() {
               ))}
             </tbody>
           </table>
-        </div>
-      ) : (
+          </div>
+        </section>
+      )}
+
+      {filteredCategories.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-ink">Ангилал</h2>
+          <div className="overflow-x-auto rounded-2xl border border-line">
+            <table className="w-full min-w-[620px] text-sm">
+              <thead className="border-b border-line bg-surface/40 text-left text-xs uppercase tracking-wide2 text-muted">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Ангилал</th>
+                  <th className="px-4 py-3 font-medium">Төрөл</th>
+                  <th className="px-4 py-3 font-medium">Slug</th>
+                  <th className="px-4 py-3 text-right font-medium">Үйлдэл</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {filteredCategories.map((category) => (
+                  <tr key={category.id} className="hover:bg-surface/30">
+                    <td className="px-4 py-3 font-medium text-ink">
+                      {category.name}
+                    </td>
+                    <td className="px-4 py-3 text-muted">
+                      {category.parent_slug
+                        ? `Дэд · ${categoryName(category.parent_slug)}`
+                        : "Үндсэн"}
+                    </td>
+                    <td className="px-4 py-3 text-muted">/{category.slug}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => handleRestoreCategory(category)}
+                          className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-2 text-xs font-medium uppercase tracking-wide2 text-muted hover:border-emerald-500 hover:text-emerald-600"
+                        >
+                          <RotateCcw size={15} /> Сэргээх
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {!filteredProducts.length && !filteredCategories.length && (
         <EmptyState
-          title="Архив хоосон байна"
-          hint="Архивласан бүтээгдэхүүн энд харагдана."
+          title={normalizedQuery ? "Илэрц олдсонгүй" : "Архив хоосон байна"}
+          hint={
+            normalizedQuery
+              ? "Хайлтын үгээ өөрчилж дахин оролдоно уу."
+              : "Архивласан бүтээгдэхүүн болон ангилал энд харагдана."
+          }
           actionLabel="Бүтээгдэхүүн рүү очих"
           actionHref="/admin/products"
         />
