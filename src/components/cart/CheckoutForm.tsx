@@ -280,7 +280,7 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
       });
   }, [authReady, verifyWirePayment]);
 
-  const submit = async () => {
+  const submit = async (paymentMethod = pay) => {
     if (!valid || busy) return;
     if (!user) {
       setErr("Захиалга өгөхийн тулд эхлээд бүртгэлдээ нэвтэрнэ үү.");
@@ -291,7 +291,7 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
     // Сагсны хуулбарыг шилжихээс өмнө авна.
     const orderItems = cartToOrderItems(lines);
     try {
-      if (pay === "cash") {
+      if (paymentMethod === "cash") {
         await completeOrder(
           form,
           undefined,
@@ -476,9 +476,17 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
           {PAYMENTS.map((p) => (
             <button
               key={p.id}
-              onClick={() => setPay(p.id)}
+              type="button"
+              onClick={() => {
+                setPay(p.id);
+                if (p.id === "wire") void submit("wire");
+              }}
+              disabled={
+                p.id === "wire" &&
+                (!valid || busy || !user || Boolean(wirePending))
+              }
               className={cn(
-                "rounded-lg border px-3 py-3 text-sm transition-colors",
+                "rounded-lg border px-3 py-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                 pay === p.id
                   ? "border-accent text-accent"
                   : "border-line text-muted",
@@ -615,22 +623,16 @@ export function CheckoutForm({ onComplete }: { onComplete?: () => void }) {
         </div>
       )}
 
-      <Button
-        onClick={submit}
-        // Хүлээгдэж буй төлбөр байхад дахин дарвал хоёр дахь PaymentIntent
-        // үүсч, давхар төлөлт үүсэх эрсдэлтэй.
-        disabled={!valid || busy || !user || Boolean(wirePending)}
-        size="lg"
-        className="w-full"
-      >
-        {busy
-          ? "Шалгаж байна..."
-          : wirePending
-            ? "Төлбөр хүлээгдэж байна"
-            : pay === "wire"
-              ? "Wire-ээр төлөх"
-              : "Захиалга баталгаажуулах"}
-      </Button>
+      {pay === "cash" && (
+        <Button
+          onClick={() => submit("cash")}
+          disabled={!valid || busy || !user}
+          size="lg"
+          className="w-full"
+        >
+          {busy ? "Хадгалж байна..." : "Захиалга баталгаажуулах"}
+        </Button>
+      )}
     </div>
   );
 }
