@@ -2,7 +2,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, Search } from "lucide-react";
+import {
+  Grid2X2,
+  Heart,
+  Menu,
+  Search,
+  ShoppingBag,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NAV_LINKS, SITE } from "@/constants/site";
 import { Category } from "@/types";
@@ -70,7 +78,7 @@ export function Header({ categories }: { categories: Category[] }) {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
           <form onSubmit={submit} className="hidden items-center 2xl:flex">
             <div className="flex items-center gap-2 rounded-full border border-line px-4 py-2">
               <Search size={15} className="text-muted" />
@@ -83,12 +91,18 @@ export function Header({ categories }: { categories: Category[] }) {
             </div>
           </form>
           <ThemeToggle />
-          <CartIndicator />
-          <AccountMenu />
+          <div className="max-sm:[&>div>a:first-child]:hidden">
+            <CartIndicator />
+          </div>
+          <div className="hidden sm:block">
+            <AccountMenu />
+          </div>
           <button
-            className="grid h-9 w-9 place-items-center text-ink xl:hidden"
+            className="grid h-9 w-9 place-items-center rounded-full text-ink transition-colors hover:bg-surface hover:text-accent xl:hidden"
             onClick={() => setOpen(!open)}
             aria-label="Цэс"
+            aria-expanded={open}
+            aria-controls="mobile-navigation"
           >
             {open ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -96,31 +110,65 @@ export function Header({ categories }: { categories: Category[] }) {
       </div>
 
       {open && (
-        <div className="border-t border-line bg-bg px-4 py-4 xl:hidden">
-          <form
-            onSubmit={submit}
-            className="mb-3 flex items-center gap-2 rounded-full border border-line px-4 py-2"
-          >
-            <Search size={16} className="text-muted" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Бүтээгдэхүүн хайх..."
-              className="w-full bg-transparent text-sm outline-none"
-            />
-          </form>
-          <nav className="flex flex-col divide-y divide-line">
-            {links.map((l) => (
+        <div
+          id="mobile-navigation"
+          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-line bg-bg shadow-lg xl:hidden"
+        >
+          <div className="mx-auto max-w-screen-2xl px-4 py-4 sm:px-5">
+            <form
+              onSubmit={submit}
+              className="flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-3"
+            >
+              <Search size={17} className="shrink-0 text-muted" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Бүтээгдэхүүн хайх..."
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
+              />
+            </form>
+
+            <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-wide2 text-muted">
+              Үндсэн цэс
+            </p>
+            <nav className="grid grid-cols-2 gap-2">
+              {[
+                { href: "/products", label: "Бүтээгдэхүүн", icon: Grid2X2 },
+                { href: "/wishlist", label: "Хадгалсан", icon: Heart },
+                { href: "/cart", label: "Сагс", icon: ShoppingBag },
+                { href: "/account", label: "Миний бүртгэл", icon: UserRound },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="flex min-h-12 items-center gap-2.5 rounded-xl border border-line bg-surface px-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+                  >
+                    <Icon size={17} className="shrink-0 text-accent" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-wide2 text-muted">
+              Ангилал
+            </p>
+            <nav className="grid grid-cols-2 gap-x-3 gap-y-1">
+              {categories.map((category) => (
               <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setOpen(false)}
-                className="py-2.5 text-sm text-ink"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+                  key={category.slug}
+                  href={`/products?category=${category.slug}`}
+                  onClick={() => setOpen(false)}
+                  className="rounded-lg px-2 py-2.5 text-sm leading-snug text-ink transition-colors hover:bg-surface hover:text-accent"
+                >
+                  {category.name}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
       )}
     </header>
