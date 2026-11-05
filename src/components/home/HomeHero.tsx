@@ -35,9 +35,6 @@ export function HomeHero({ products }: { products: Product[] }) {
             Laptop, monitor болон хэрэгслийг баталгаатай, хурдан хүргэлттэйгээр
             нэг дороос сонго.
           </p>
-          <p className="mt-4 text-sm font-medium text-sky-700 dark:text-sky-300">
-            {[heroProduct.brand, heroProduct.title].filter(Boolean).join(" · ")}
-          </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/products"
