@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { MessengerButton } from "@/components/layout/MessengerButton";
 import { SITE } from "@/constants/site";
 import { isSupabaseEnabled } from "@/lib/supabase/server";
 import { getCategories, getProducts } from "@/lib/data";
@@ -47,6 +48,7 @@ export default async function RootLayout({
           <Header categories={categories} />
           <main className="min-h-[60vh]">{children}</main>
           <Footer categories={categories} />
+          <MessengerButton />
         </Providers>
       </body>
     </html>

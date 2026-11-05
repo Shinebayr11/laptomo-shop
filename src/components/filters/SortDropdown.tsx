@@ -7,7 +7,7 @@ export function SortDropdown({ value, onChange }: { value: SortKey; onChange: (v
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as SortKey)}
-      className="rounded-full border border-line bg-bg px-4 py-2.5 text-sm text-ink outline-none focus:border-accent"
+      className="w-full min-w-0 rounded-full border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none focus:border-accent sm:w-auto sm:px-4"
     >
       {SORT_OPTIONS.map((o) => (
         <option key={o.value} value={o.value}>Эрэмбэлэх: {o.label}</option>

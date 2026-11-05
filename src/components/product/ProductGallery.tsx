@@ -6,8 +6,8 @@ import { cn } from "@/utils/format";
 export function ProductGallery({ images, title }: { images: string[]; title: string }) {
   const [active, setActive] = useState(0);
   return (
-    <div className="flex flex-col-reverse gap-4 lg:flex-row lg:items-start">
-      <div className="flex gap-3 overflow-x-auto pb-1 lg:max-h-[720px] lg:w-28 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:pb-0">
+    <div className="flex min-w-0 flex-col-reverse gap-4 lg:flex-row lg:items-start">
+      <div className="flex min-w-0 max-w-full gap-3 overflow-x-auto pb-1 lg:max-h-[720px] lg:w-28 lg:shrink-0 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:pb-0">
         {images.map((src, i) => (
           <button
             key={i} onClick={() => setActive(i)}
@@ -27,7 +27,7 @@ export function ProductGallery({ images, title }: { images: string[]; title: str
           </button>
         ))}
       </div>
-      <div className="relative w-full overflow-hidden bg-white">
+      <div className="relative min-w-0 w-full overflow-hidden bg-white">
         <div className="relative aspect-[4/3] w-full">
           <Image
             src={images[active]}

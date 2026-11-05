@@ -11,7 +11,8 @@ export const SITE = {
   email: "Laptomoscreen@gmail.com",
   address: "Улаанбаатар, Хан-Уул дүүрэг, 8-хороо, Шинэ яармаг хороолол 746-р байр",
   social: {
-    facebook: "https://facebook.com/lstechstore",
+    facebook: "https://www.facebook.com/profile.php?id=61555830586975",
+    messenger: "https://m.me/61555830586975",
     instagram: "https://instagram.com/lstechstore",
   },
 };

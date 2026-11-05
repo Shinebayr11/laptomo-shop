@@ -50,7 +50,7 @@ export function ProductInfo({ product, categories }: { product: Product; categor
         )}
         <span>{cat?.name}</span>
       </div>
-      <h1 className="mt-3 font-display text-4xl font-bold tracking-tightest text-ink">
+      <h1 className="mt-3 break-words font-display text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
         {product.title}
       </h1>
 
@@ -61,7 +61,7 @@ export function ProductInfo({ product, categories }: { product: Product; categor
         </span>
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         <span className="font-display text-3xl font-bold text-ink">
           {formatMNT(effectivePrice(product.price, product.discount_price))}
         </span>

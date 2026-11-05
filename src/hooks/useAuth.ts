@@ -110,6 +110,12 @@ export function useAuth() {
           options: { data: { name: cleanName }, emailRedirectTo },
         });
         if (error) throw error;
+        // Confirm email асаалттай үед өмнө бүртгэлтэй хэрэглэгчид Supabase
+        // user enumeration-оос хамгаалж fake user буцаадаг. identities хоосон
+        // тул "email илгээгдлээ" гэж буруу мэдээлэхээс сэргийлнэ.
+        if (!data.user || data.user.identities?.length === 0) {
+          throw new Error("User already registered");
+        }
         if (data.session) {
           await sb!.auth.signOut();
           setUser(null);
@@ -123,6 +129,31 @@ export function useAuth() {
       return { needsEmailConfirmation: true };
     }
     throw new Error("Бүртгэл үүсгэхийн тулд Supabase холболт тохируулна уу.");
+  };
+
+  const resendEmailConfirmation = async (email: string) => {
+    if (!isSupabaseEnabled) {
+      throw new Error(
+        "Баталгаажуулах email илгээхэд Supabase холболт шаардлагатай байна.",
+      );
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRedirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/auth/callback`
+        : undefined;
+
+    try {
+      const { error } = await createClient()!.auth.resend({
+        type: "signup",
+        email: cleanEmail,
+        options: { emailRedirectTo },
+      });
+      if (error) throw error;
+    } catch (error) {
+      throw normalizeSupabaseError(error);
+    }
   };
 
   const logout = async () => {
@@ -198,6 +229,7 @@ export function useAuth() {
     ready,
     login,
     register,
+    resendEmailConfirmation,
     logout,
     requestPasswordReset,
     updatePassword,

@@ -33,13 +33,13 @@ export function CatalogView({
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
-      <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-4xl font-bold tracking-tightest text-ink">Бүтээгдэхүүн</h1>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-display text-3xl font-bold tracking-tightest text-ink sm:text-4xl">Бүтээгдэхүүн</h1>
           <p className="mt-1 text-sm text-muted">{results.length} бараа олдлоо</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setOpenMobile(true)} className="flex items-center gap-2 rounded-full border border-line px-4 py-2.5 text-sm lg:hidden">
+        <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
+          <button onClick={() => setOpenMobile(true)} className="flex min-w-0 items-center justify-center gap-2 rounded-full border border-line px-3 py-2.5 text-sm lg:hidden">
             <SlidersHorizontal size={15} /> Шүүлтүүр
           </button>
           <SortDropdown value={filters.sort} onChange={(sort) => update({ sort })} />

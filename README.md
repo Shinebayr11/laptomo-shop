@@ -182,6 +182,25 @@ Webhook нь PaymentIntent үүсэх үед хадгалсан `pending_orders`
 `public.newsletter_subscribers` хүснэгтэд хадгалагдана; public RLS policy байхгүй
 тул зөвхөн server-side API бичих боломжтой.
 
+### Бүртгэлийн email (Custom SMTP)
+Supabase-ийн default email үйлчилгээ нь production хэрэглээнд зориулагдаагүй:
+зөвхөн project-ийн team email хаягуудад илгээдэг бөгөөд илгээлтийн хязгаар маш
+бага. Бодит хэрэглэгчдэд бүртгэл баталгаажуулах болон нууц үг сэргээх email
+хүргэхийн тулд **Supabase → Authentication → Emails → SMTP Settings** хэсэгт
+өөрийн SMTP provider-ийг тохируулна.
+
+Мөн **Authentication → URL Configuration** дотор дараах redirect URL-үүдийг
+зөвшөөрнө:
+
+```
+http://localhost:3100/auth/callback
+https://<таны-домэйн>/auth/callback
+```
+
+SMTP тохируулсны дараа `/register` дээр шинэ email-ээр туршина. Өмнө бүртгэлтэй
+email ашиглавал шинэ баталгаажуулах захидал үүсэхгүй; нэвтрэх эсвэл нууц үг
+сэргээх урсгалыг ашиглана.
+
 ### Deploy хийх (Vercel + .mn домэйн)
 1. Кодоо GitHub руу push хийнэ.
 2. [vercel.com](https://vercel.com) дээр төслөө import хийнэ.

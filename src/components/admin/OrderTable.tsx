@@ -29,15 +29,15 @@ export function OrderTable({ orders, onStatus }: { orders: Order[]; onStatus: (i
           {openId === o.id && (
             <div className="border-t border-line px-5 py-4 text-sm">
               <p className="mb-2 text-muted">Хүргэх хаяг: <span className="text-ink">{o.address}</span></p>
-              <ul className="mb-4 space-y-1">
+              <ul className="mb-4 space-y-2">
                 {o.items.map((it) => (
-                  <li key={it.product_id} className="flex justify-between">
-                    <span className="text-ink">{it.title} × {it.quantity}</span>
-                    <span className="text-muted">{formatMNT(it.price * it.quantity)}</span>
+                  <li key={it.product_id} className="flex gap-3">
+                    <span className="min-w-0 flex-1 break-words text-ink">{it.title} × {it.quantity}</span>
+                    <span className="shrink-0 whitespace-nowrap text-muted">{formatMNT(it.price * it.quantity)}</span>
                   </li>
                 ))}
               </ul>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="text-xs uppercase tracking-wide2 text-muted">Төлөв:</span>
                 <select value={o.status} onChange={(e) => onStatus(o.id, e.target.value as OrderStatus)} className="cursor-pointer rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink outline-none focus:border-accent">
                   {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}

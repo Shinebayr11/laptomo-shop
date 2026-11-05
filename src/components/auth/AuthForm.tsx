@@ -28,6 +28,15 @@ function authErrorMessage(error: unknown) {
   if (lower.includes("already registered") || lower.includes("already exists")) {
     return "Энэ имэйлээр бүртгэл үүссэн байна. Нэвтрэх хэсгээр орно уу.";
   }
+  if (
+    lower.includes("email_address_not_authorized") ||
+    lower.includes("email address not authorized")
+  ) {
+    return "Энэ хаяг руу email илгээх эрхгүй байна. Supabase дээр Custom SMTP тохируулах шаардлагатай.";
+  }
+  if (lower.includes("rate limit") || lower.includes("over_email_send_rate_limit")) {
+    return "Email илгээх хязгаарт хүрсэн байна. Түр хүлээгээд дахин оролдоно уу.";
+  }
   if (lower.includes("signup") && lower.includes("disabled")) {
     return "Supabase дээр шинэ хэрэглэгч бүртгэх тохиргоо хаалттай байна.";
   }
@@ -52,13 +61,22 @@ export function AuthForm({
   initialNotice?: string;
 }) {
   const router = useRouter();
-  const { user, ready, isAdmin, login, register } = useAuth();
+  const {
+    user,
+    ready,
+    isAdmin,
+    login,
+    register,
+    resendEmailConfirmation,
+  } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [notice, setNotice] = useState(initialNotice);
   const [busy, setBusy] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState("");
+  const [resending, setResending] = useState(false);
   const isLogin = mode === "login";
   const requestedPath =
     nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : null;
@@ -78,6 +96,7 @@ export function AuthForm({
     event.preventDefault();
     setErr("");
     setNotice("");
+    setConfirmationEmail("");
     const cleanEmail = email.trim().toLowerCase();
 
     if (!cleanEmail || !password) {
@@ -99,6 +118,7 @@ export function AuthForm({
       } else {
         const result = await register(name, cleanEmail, password);
         if (result.needsEmailConfirmation) {
+          setConfirmationEmail(cleanEmail);
           setNotice("Баталгаажуулах холбоос таны имэйл рүү илгээгдлээ. Имэйлээ шалгаад баталгаажуулсны дараа нэвтэрнэ үү.");
           return;
         }
@@ -109,6 +129,22 @@ export function AuthForm({
       setErr(authErrorMessage(error));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const resendConfirmation = async () => {
+    if (!confirmationEmail || resending) return;
+    setErr("");
+    setResending(true);
+    try {
+      await resendEmailConfirmation(confirmationEmail);
+      setNotice(
+        "Баталгаажуулах email-ийг дахин илгээлээ. Spam / Junk хавтсаа мөн шалгана уу.",
+      );
+    } catch (error) {
+      setErr(authErrorMessage(error));
+    } finally {
+      setResending(false);
     }
   };
 
@@ -143,7 +179,21 @@ export function AuthForm({
             </div>
           )}
         </div>
-        {notice && <p className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm leading-6 text-ink">{notice}</p>}
+        {notice && (
+          <div className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm leading-6 text-ink">
+            <p>{notice}</p>
+            {confirmationEmail && (
+              <button
+                type="button"
+                onClick={resendConfirmation}
+                disabled={resending}
+                className="mt-2 font-medium text-accent hover:underline disabled:opacity-60"
+              >
+                {resending ? "Илгээж байна..." : "Email дахин илгээх"}
+              </button>
+            )}
+          </div>
+        )}
         {err && <p className="text-sm text-red-500">{err}</p>}
         <button
           type="submit"

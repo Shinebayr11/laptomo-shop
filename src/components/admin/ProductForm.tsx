@@ -163,7 +163,7 @@ export function ProductForm({ initial, onSave, onClose }: { initial?: Product; o
                         type="button"
                         onClick={() => removeImage(i)}
                         aria-label="Зураг устгах"
-                        className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white opacity-100 transition-opacity sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                       >
                         <X size={12} />
                       </button>

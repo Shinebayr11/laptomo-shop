@@ -32,15 +32,15 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   return (
     <div className="page-enter mx-auto max-w-screen-2xl px-5 py-10 lg:px-8">
-      <nav className="mb-8 flex items-center gap-1.5 text-xs text-muted">
-        <Link href="/" className="hover:text-accent">Нүүр</Link><ChevronRight size={13} />
-        <Link href="/products" className="hover:text-accent">Бүтээгдэхүүн</Link><ChevronRight size={13} />
-        <span className="text-ink">{product.title}</span>
+      <nav className="mb-8 flex min-w-0 items-center gap-1.5 text-xs text-muted">
+        <Link href="/" className="shrink-0 hover:text-accent">Нүүр</Link><ChevronRight size={13} className="shrink-0" />
+        <Link href="/products" className="shrink-0 hover:text-accent">Бүтээгдэхүүн</Link><ChevronRight size={13} className="shrink-0" />
+        <span className="min-w-0 truncate text-ink">{product.title}</span>
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]">
         <ProductGallery images={product.images} title={product.title} />
-        <div>
+        <div className="min-w-0">
           <ProductInfo product={product} categories={categories} />
           <ProductSpecs specs={product.specifications} />
         </div>
