@@ -4,6 +4,10 @@ import { Order } from "@/types";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { sendEmail, isEmailConfigured } from "@/lib/email/resend";
 import {
+  isN8nOrderWebhookConfigured,
+  sendOrderToN8n,
+} from "@/lib/email/n8n";
+import {
   adminOrderEmail,
   customerOrderEmail,
 } from "@/lib/email/order-templates";
@@ -88,27 +92,34 @@ export async function POST(request: NextRequest) {
       .eq("notification_claimed_at", claimedAt);
   };
 
-  if (!isEmailConfigured()) {
+  const resendConfigured = isEmailConfigured();
+  const n8nConfigured = isN8nOrderWebhookConfigured();
+  if (!resendConfigured && !n8nConfigured) {
     await releaseClaim();
     return NextResponse.json(
-      { error: "RESEND_API_KEY тохируулаагүй байна." },
+      {
+        error:
+          "N8N_ORDER_WEBHOOK_URL/SECRET эсвэл RESEND_API_KEY тохируулаагүй байна.",
+      },
       { status: 503 },
     );
   }
 
   // Хэрэглэгчийн имэйлийг auth-аас авна — orders дотор хадгалагддаггүй.
   let customerEmail: string | null = null;
-  if (order.user_id) {
+  if (resendConfigured && order.user_id) {
     const { data } = await supabase.auth.admin.getUserById(order.user_id);
     customerEmail = data?.user?.email ?? null;
   }
 
   const adminEmail =
-    process.env.ADMIN_NOTIFY_EMAIL?.trim() || "adminlaptomo@gmail.com";
+    process.env.ADMIN_NOTIFY_EMAIL?.trim() || "Laptomoscreen@gmail.com";
   const results: Record<string, string> = {};
 
   if (order.customer_notified_at) {
     results.customer = "already_sent";
+  } else if (!resendConfigured) {
+    results.customer = "disabled";
   } else if (customerEmail) {
     const mail = customerOrderEmail(order);
     const sent = await sendEmail({
@@ -141,13 +152,24 @@ export async function POST(request: NextRequest) {
     results.admin = "already_sent";
   } else {
     const adminMail = adminOrderEmail(order);
-    const sentAdmin = await sendEmail({
-      to: adminEmail,
-      subject: adminMail.subject,
-      html: adminMail.html,
-    });
+    const sentAdmin = n8nConfigured
+      ? await sendOrderToN8n({
+          order,
+          to: adminEmail,
+          subject: adminMail.subject,
+          html: adminMail.html,
+        })
+      : await sendEmail({
+          to: adminEmail,
+          subject: adminMail.subject,
+          html: adminMail.html,
+        });
     adminSent = sentAdmin.ok;
-    results.admin = sentAdmin.ok ? "sent" : sentAdmin.error;
+    results.admin = sentAdmin.ok
+      ? n8nConfigured
+        ? "sent_via_n8n"
+        : "sent"
+      : sentAdmin.error;
     if (sentAdmin.ok) {
       const { error: markAdminError } = await supabase
         .from("orders")
@@ -165,6 +187,7 @@ export async function POST(request: NextRequest) {
   }
 
   const customerSent =
+    !resendConfigured ||
     !customerEmail ||
     Boolean(order.customer_notified_at) ||
     results.customer === "sent";

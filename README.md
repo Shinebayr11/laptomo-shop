@@ -171,6 +171,35 @@ Webhook нь PaymentIntent үүсэх үед хадгалсан `pending_orders`
 автоматаар үүсгэнэ. Иймээс хэрэглэгч төлбөр төлөөд browser-ээ хаасан ч
 захиалга алдагдахгүй.
 
+### Шинэ захиалгыг n8n-ээр email болгох
+
+`n8n/ls-tech-store-order-email.json` workflow-г n8n рүү import хийнэ.
+
+1. **Order Webhook** node дээр Header Auth credential сонгоно:
+   - Header name: `Authorization`
+   - Header value: `Bearer <N8N_ORDER_WEBHOOK_SECRET>`
+2. **Send order email** node дээр email илгээх Gmail account-аа холбоно. Хүлээн
+   авагч нь `Laptomoscreen@gmail.com` гэж бэлэн тохируулагдсан.
+3. Workflow-г **Active** болгоод Webhook node-ийн **Production URL**-ийг хуулна.
+4. Local `.env.local` болон Vercel Environment Variables-д:
+
+```env
+N8N_ORDER_WEBHOOK_URL=https://<n8n-host>/webhook/ls-tech-store-order
+N8N_ORDER_WEBHOOK_SECRET=<санамсаргүй-урт-нууц-үг>
+ADMIN_NOTIFY_EMAIL=Laptomoscreen@gmail.com
+ORDER_NOTIFY_SECRET=<өөр-санамсаргүй-урт-нууц-үг>
+```
+
+5. Supabase → **Database → Webhooks** дээр `orders` хүснэгтийн `INSERT` event-д:
+   - URL: `https://www.lstechstore.com/api/notify/order`
+   - Header: `x-notify-secret: <ORDER_NOTIFY_SECRET>`
+
+`ORDER_NOTIFY_SECRET` нь Supabase ↔ сайт, `N8N_ORDER_WEBHOOK_SECRET` нь сайт ↔
+n8n хооронд тусдаа байна. n8n Gmail node амжилттай ажилласны дараа л захиалгын
+`admin_notified_at` тэмдэглэгдэнэ; webhook дахин ирсэн ч нэг захиалгыг давхар
+email болгохгүй. `RESEND_API_KEY` тохируулсан бол хэрэглэгчид очих захиалгын
+баталгаажуулах email мөн хэвээр ажиллана.
+
 #### ⚠️ Нөөцийн SQL
 `supabase/stock/01…08`-г дарааллаар ажиллуулаагүй бол захиалга, webhook эсвэл
 мэдэгдлийн хэсэг бүрэн ажиллахгүй

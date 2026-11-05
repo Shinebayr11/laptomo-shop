@@ -1,0 +1,56 @@
+{
+  "name": "LS Tech Store - New order email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ls-tech-store-order",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "3213f7a7-9374-4e0a-a836-7072e556d4c4",
+      "name": "Order Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "2e02c852-66d0-40bc-b129-e779be3cde82"
+    },
+    {
+      "parameters": {
+        "sendTo": "Laptomoscreen@gmail.com",
+        "subject": "={{ $json.body.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.body.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "50a084b3-18be-4bb8-8c42-0aa44714999c",
+      "name": "Send order email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [260, 0]
+    }
+  ],
+  "connections": {
+    "Order Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send order email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a80d42ab-b9ca-45e2-a557-ef66f1482689",
+  "tags": []
+}
